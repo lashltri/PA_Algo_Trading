@@ -1,0 +1,47 @@
+
+
+% ----- Preamble (for bookdown PDF) -----
+
+% Page setup
+\usepackage[margin=1in]{geometry}
+\usepackage{titlesec}
+\newcommand{\sectionbreak}{\clearpage}
+\usepackage{listings}
+
+% Encoding and fonts
+\usepackage{fontspec} % only works with xelatex
+\setmainfont{Arial}
+
+\usepackage{polyglossia}
+\setmainlanguage{english}
+
+% Math
+\usepackage{amsmath, amssymb}
+\usepackage{caption}
+
+% Layout and spacing
+\usepackage{parskip}     % no indents, blank lines between paragraphs
+\usepackage{titlesec}    % control title formats
+\titleformat{\paragraph}[block]{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
+\usepackage{float}
+
+% Visuals and extras
+\usepackage{xcolor}
+\usepackage{soul}        % highlighting
+
+% Links and references
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks = true,
+  linkcolor = black,
+  citecolor = blue,
+  urlcolor  = blue
+}
+
+% PDF inclusion (for title page)
+\usepackage{pdfpages}
+
+
+
+
+

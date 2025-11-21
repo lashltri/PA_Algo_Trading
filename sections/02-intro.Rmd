@@ -1,0 +1,11 @@
+# Introduction
+
+## Task
+
+This project involves implementing and evaluating several rule-based trading strategies across different asset classes, including equities, cryptocurrencies and commodities. Historical price data is used as an input. The main task is to examine how different indicators, such as moving averages, RSI, or Bollinger Bands, perform as trading rules when applied to historical market data.
+
+The strategies are then compared to identify and analyze differences in performance.
+
+## Objective
+
+The objective is to build a framework for evaluating trading strategies. This project will provide a quantitative baseline for later work that will extend the approach with more advanced or data-driven methods, such as machine learning models.

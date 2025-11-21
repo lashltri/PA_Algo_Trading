@@ -1,0 +1,828 @@
+---
+editor_options: 
+  markdown: 
+    wrap: 72
+  chunk_output_type: inline
+---
+
+# Methodology
+
+## Data
+
+```{r, echo=FALSE}
+chartSeries(px_list$SSMI, theme = chartTheme("white"), name = "Swiss Market Index (SMI)")
+```
+
+```{r, echo=FALSE, fig.keep="last"}
+# --- Helper: geschätzte df aus Exzess-Kurtosis (t: excess = 6/(df-4)) ---
+estimate_df_from_kurt <- function(x) {
+  k_ex <- as.numeric(PerformanceAnalytics::kurtosis(x, method = "excess", na.rm = TRUE))
+  if (is.na(k_ex) || k_ex <= 0) return(1000)        # ~Normal, sehr große df
+  df <- 4 + 6 / k_ex
+  df <- max(min(df, 1000), 4.05)                    # df > 4 für endliche Varianz/Kurtosis
+  df
+}
+
+# --- Returns aus px_list bauen (Adjusted, Log-Returns) ---
+ret_list <- lapply(px_list, function(px) {
+  r <- diff(log(Ad(px)))
+  na.omit(as.numeric(r))
+})
+
+# --- Layout bestimmen: z.B. 3 Spalten ---
+n <- length(ret_list)
+ncol <- 3
+nrow <- ceiling(n / ncol)
+
+# ---------------- GRID 1: Student-t ----------------
+op <- par(mfrow = c(nrow, ncol), mar = c(3, 3, 2, 1))
+on.exit(par(op), add = TRUE)
+
+for (nm in names(ret_list)) {
+  r <- ret_list[[nm]]
+  if (length(r) < 10) { plot.new(); title(main = paste(nm, "(zu wenig Daten)")); next }
+  df_hat <- estimate_df_from_kurt(r)
+  qqPlot(r,
+         distribution = "t", df = df_hat,
+         envelope = 0.95, id = FALSE,
+         main = sprintf("%s  t(df=%.1f)", nm, df_hat),
+         xlab = "Theoretische Quantile (t)",
+         ylab = "Stichproben-Quantile")
+}
+```
+
+```{r, echo=FALSE, fig.keep="last"}
+par(mfrow = c(nrow, ncol), mar = c(3, 3, 2, 1))
+
+for (nm in names(ret_list)) {
+  r <- ret_list[[nm]]
+  if (length(r) < 10) { plot.new(); title(main = paste(nm, "(zu wenig Daten)")); next }
+  qqPlot(r,
+         distribution = "norm",
+         envelope = 0.95, id = FALSE,
+         main = sprintf("%s  Normal", nm),
+         xlab = "Theoretische Quantile (Normal)",
+         ylab = "Stichproben-Quantile")
+}
+```
+
+```{r, echo = FALSE, fig.keep="last"}
+# Pakete
+library(quantmod)
+library(car)
+library(PerformanceAnalytics)
+
+# 1) Log-Returns aus Adjusted Prices
+ret_list <- lapply(px_list, function(px) {
+  r <- diff(log(Ad(px)))
+  na.omit(r)
+})
+
+# 2) df-Schätzung für t-Verteilung aus Exzess-Kurtosis:
+#    t-excess = 6 / (df - 4)  ->  df = 4 + 6 / excess
+estimate_df_from_kurt <- function(x_xts) {
+  x <- as.numeric(x_xts)
+  k_ex <- suppressWarnings(PerformanceAnalytics::kurtosis(x, method = "excess", na.rm = TRUE))
+  if (is.na(k_ex) || k_ex <= 0) return(1000)     # ~Normal
+  df <- 4 + 6 / k_ex
+  max(min(df, 1000), 4.05)                       # df>4 für endliche Var/Kurtosis
+}
+
+# 3) Layout (z.B. 3 Spalten)
+n      <- length(ret_list)
+ncol   <- 3
+nrow   <- ceiling(n / ncol)
+
+# ---------------- GRID A: Student-t ----------------
+op <- par(mfrow = c(nrow, ncol), mar = c(3, 3, 2, 1))
+on.exit(par(op), add = TRUE)
+
+for (nm in names(ret_list)) {
+  r <- ret_list[[nm]]
+  if (length(r) < 10) { plot.new(); title(main = paste(nm, "(zu wenig Daten)")); next }
+  df_hat <- estimate_df_from_kurt(r)
+  car::qqPlot(as.numeric(r),
+              distribution = "t", df = df_hat,
+              envelope = 0.95, id = FALSE,
+              main = sprintf("%s  t(df=%.1f)", nm, df_hat),
+              xlab = "Theoretische Quantile (t)",
+              ylab = "Stichproben-Quantile")
+}
+
+# ---------------- GRID B: Normal -------------------
+par(mfrow = c(nrow, ncol), mar = c(3, 3, 2, 1))
+
+for (nm in names(ret_list)) {
+  r <- ret_list[[nm]]
+  if (length(r) < 10) { plot.new(); title(main = paste(nm, "(zu wenig Daten)")); next }
+  car::qqPlot(as.numeric(r),
+              distribution = "norm",
+              envelope = 0.95, id = FALSE,
+              main = sprintf("%s  Normal", nm),
+              xlab = "Theoretische Quantile (Normal)",
+              ylab = "Stichproben-Quantile")
+}
+
+```
+
+```{r, echo=FALSE, fig.keep="last"}
+# ---------------- GRID B: Normal -------------------
+par(mfrow = c(nrow, ncol), mar = c(3, 3, 2, 1))
+
+for (nm in names(ret_list)) {
+  r <- ret_list[[nm]]
+  if (length(r) < 10) { plot.new(); title(main = paste(nm, "(zu wenig Daten)")); next }
+  car::qqPlot(as.numeric(r),
+              distribution = "norm",
+              envelope = 0.95, id = FALSE,
+              main = sprintf("%s  Normal", nm),
+              xlab = "Theoretische Quantile (Normal)",
+              ylab = "Stichproben-Quantile")
+}
+
+```
+
+## Pipeline
+
+```{r pipeline-fig, fig.cap="Software Pipeline", echo = FALSE, out.width="50%", fig.align='center'}
+knitr::include_graphics("figures/pipeline.png")
+
+
+```
+
+Figure \@ref(fig:pipeline-fig) illustrates the analysis pipeline
+implemented in this project. The process begins with the import of
+historical market data from the Yahoo Finance API. The raw data is
+cleaned, aligned across assets, and missing values are approximated when
+necessary. Overall, only minimal preprocessing is required, as the data
+is already of high quality.
+
+After preprocessing, trading strategies are constructed. Alongside
+traditional technical strategies such as Moving Averages and Bollinger
+Bands, an ARMA-GARCH model is fitted to capture return dynamics and
+volatility clustering. The conditional volatility estimates obtained
+from the GARCH component are used for two separate purposes. Within the
+ARMA-GARCH strategy, they determine dynamic position sizing, and for all
+strategies, they are used to standardize returns prior to hypothesis
+testing, reducing heteroscedasticity and creating approximately
+independent data.
+
+The strategies are then executed in an out-of-sample backtesting
+environment where the estimated log-returns of the strategies are
+returned.
+
+Finally, a paired hypothesis test is performed to evaluate whether
+differences in performance are statistically significant.
+
+## Trading-Strategies
+
+### Moving Average Strategy (Filters)
+
+The equal-weighted Moving Average (EqMA) (see Equation \@ref(eq:sma)) is
+applied to the adjusted closing prices of the assets. Two different
+window lengths are defined, a short-term window $N_1$ and a long-term
+window $N_2$. The parameters are determined through hyperparameter
+tuning based on in-sample performance (see Chapter
+\@ref(sec:parametertuning)).
+
+The trading signals follow the crossover rule introduced in Chapter
+\@ref(movingaverages), with an adjustment to a long/flat configuration
+instead of long/short, due to the persistent underperformance of short
+positions and their potential for uncontrolled losses. Trading Signals
+can be interpreted as in the following Table \@ref(tab:marules) :
+
+\begin{table}[htbp]
+\caption{Trading logic of the Moving Average crossover strategy.}
+\label{tab:marules}
+\centering
+\begin{tabular}{>{\centering\arraybackslash}m{4cm} >{\centering\arraybackslash}m{1.5cm} m{8cm}}
+\hline
+\textbf{Condition} & \textbf{POS\textsubscript{t+1}} & \textbf{Interpretation} \\
+\hline
+$MA_{N_1,t} > MA_{N_2,t}$ & 1 & Market trend is upward $\rightarrow$ take a long position \\
+$MA_{N_1,t} < MA_{N_2,t}$ & 0 & Market trend is downward $\rightarrow$ stay out of the market \\
+$MA_{N_1,t} = MA_{N_2,t}$ & 0 & No clear trend $\rightarrow$ stay out of the market \\
+\hline
+\end{tabular}
+\end{table}
+
+The following MA function defined in Example \@ref(exm:mafun) is applied
+to each stock index. The paramerters $N_1$ and $N_2$ are tuned as
+described in Chapter \@ref(sec:parametertuning), the optimal parameters
+are determined annually based on a rolling five-year window.
+
+::: {#exm:mafun .example}
+\label{exm:mafun} MA function in R
+
+```{r, ref.label='strat_ma-fn', echo=TRUE, eval=FALSE}
+
+```
+:::
+
+**Example implementation on the SMI**
+
+Figure \@ref(fig:maStrategy) is an implementation of the Moving Average
+(MA) crossover strategy on the SMI for the period 2010–2024.\
+At the beginning of the sample, there is a warm-up phase without any
+Moving Averages because past observations are required before the Moving
+Average data can be computed.\
+The short-term (red) and long-term (blue) moving averages determine the
+trading positions according to the crossover logic. The grey bars in the
+lower panel represent the trading signals generated.
+
+```{r maStrategy, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="SMI with short-term (red) and long-term (blue) moving averages and corresponding trading signal (2010–2024). Parameters $N_1$ and $N_2$ are estimated annually using a rolling five-year window.", out.width="80%", fig.align="center", fig.keep="last", fig.width=9, fig.height=7, dpi=300}
+
+
+
+SSMI <- px_list$SSMI$SSMI.Adjusted
+SMA_N1 <- STRATS$MA$SSMI$strategy$`SMA short`
+SMA_N2 <- STRATS$MA$SSMI$strategy$`SMA long`
+signal <- STRATS$MA$SSMI$signal
+from_to<-"2010-08::2020-09-15"
+
+chartSeries(SSMI,
+            type = "line",
+            subset=date_from_to,
+            theme=chartTheme("white"))
+addTA(SMA_N1,col="red", on = 1)
+addTA(SMA_N2,col="blue", on = 1)
+addTA(signal,col="grey", type = "h")
+
+# chart_Series(SSMI, name = "SSMI MA Strategy")
+# add_TA(SMA_N1, col = "red",  on = 1, lwd = 2)
+# add_TA(SMA_N2, col = "blue", on = 1, lwd = 2)
+# add_TA(signal,  col = "grey", type = "h", on = NA, lwd = 1)
+```
+
+### Bollinger Bands
+
+explain why i didnt use garch to calculate sd.
+
+\\hl{Fairness / separation of ideas. ARIMA/GARCH is itself one of the
+strategies being compared. If you give BB a GARCH inside the signal, you
+partially turn BB into a volatility-model strategy and muddy the
+comparison.
+
+Statistical power. Making all strategies more volatility-aware can
+reduce detectable differences (they all hedge similarly), which risks no
+significant difference.}
+
+```{r bbStrategy, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="SMI with optimized Bollinger Bands (blue = moving average, grey = ± $k * sigma$) and trading signal (2010–2020). Parameters $N$ and $k$ are estimated annually using a rolling five-year window.", out.width="80%", fig.align="center", fig.keep="last", fig.width=9, fig.height=7, dpi=300}
+
+
+
+SMA <- STRATS$BB$SSMI$strategy$mavg
+up <- STRATS$BB$SSMI$strategy$up
+dn <- STRATS$BB$SSMI$strategy$dn
+signal <- STRATS$BB$SSMI$signal
+from_to<-"2010-08::2020-09-15"
+
+chartSeries(px_list$SSMI$SSMI.Adjusted,
+            type = "line",
+            subset=date_from_to,
+            theme=chartTheme("white"), name = "SSMI BB Strategy")
+
+addTA(SMA,type="S",col="blue", on = 1)
+addTA(up,type="S",col="darkgrey", on = 1, lty = 2)
+addTA(dn,type="S",col="darkgrey", on = 1, lty = 2)
+addTA(signal,col="grey", type = "h")
+
+
+
+```
+
+### Moving Average Convergence Divergence
+
+\newpage
+
+## ARMA - GARCH
+
+This section describes how ARMA–GARCH forecasts are used to generate
+trading signals. The statistical model and its theoretical properties
+are discussed in Section \@ref(theoryarmagarch) Here, the focus is on
+the practical implementation.
+
+### Identification (in-sample) {#estimGARCH}
+
+The ARMA–GARCH models are estimated separately for each index. No
+automated model selection or parameter tuning is applied.
+
+The in-Sample Period is defined as the beginning of each asset history
+(2010 or later) up to \hl{" insample"}. This ensures consistency with
+other trading strategies (same cut-off date) and that the estimation
+window is sufficiently long even for assents with shorter histories such
+as Bitcoin.
+
+The ARMA orders may differ across assets, based on Bayesian information
+criteria (BIC) and the autocorrelation structure. The GARCH(1,1)
+specification is kept constant, since it is widely used in financial
+volatility modeling and provides a robust baseline for risk forecasting.
+The innovation distributions were also varied during the estimation
+process, the Student-t distribution was always preferable to the
+Gaussian distribution .
+
+Models are estimated via maximum likelihood.
+
+Models were assessed based on residual diagnostics as discussed in
+Section \@ref(theoryarmagarch), including Ljung-Box statistics. Only
+models that passed these diagnostics were considered suitable for
+forecasting. Among the valid candidates for each asset, the final model
+specification was selected by minimizing the Bayesian Information
+Criterion (BIC), ensuring a balance between goodness of fit and model
+parsimony.
+
+The resulting specifications for the assets are summarized in following
+Table \@ref(tab:modelspec):
+
+```{r modelspec, echo=FALSE, results='asis'}
+library(knitr)
+
+modelspec <- data.frame(
+  Asset = c("SSMI", "GSPC", "IXIC", "GDAXI", "BTC-USD", "CL=F", "GC=F", "NG=F", "SI=F", "HG=F"),
+  Model = c("ARMA(1,0)-GARCH(1,1)",
+            "ARMA(0,1)-GARCH(1,1)",
+            "ARMA(0,1)-GARCH(1,1)",
+            "ARMA(1,0)-GARCH(1,1)",
+            "ARMA(1,1)-GARCH(1,1)",
+            "ARMA(1,0)-GARCH(1,1)",
+            "ARMA(1,0)-GARCH(1,1)",
+            "ARMA(1,0)-GARCH(1,1)",
+            "ARMA(1,0)-GARCH(1,1)",
+            "ARMA(1,0)-GARCH(1,1)")
+)
+
+
+kable(modelspec,
+      caption = "(\\#tab:modelspec) Model specifications",
+      format = 'simple', align = "l")
+
+```
+
+**Example Model Identification SMI**
+
+In this example the Daily log-returns of the SMI were to be molded using
+an ARMA-GARCH model. The in-sample period begins in 2010 and ends after
+2018. The remaining observations were reserved for later out-of-sample
+forecasting and backtesting.
+
+In a first step, the in-sample prices and corresponding log-returns were
+visualized to obtain a general understanding of the market’s level and
+volatility patterns. The first panel of Figure \@ref(fig:ssmiAGprice)
+shows a steady upward trend until about 2015.
+
+The second panel plots the corresponding log returns for the same
+in-sample period. As expected the log return appear to be stationary,
+but exhibit volatility clustering. These observations justify the use of
+an ARMA-GARCH model.
+
+Although the mean of returns does not differ significantly from zero, it
+was observed empirically that including a mean term (μ) leads to less
+frequent switching of trading positions in the subsequent strategy
+implementation. This behavior is preferred, therefore the mean component
+was estimated for all assets, even in cases where statistical criteria
+suggested it was not strictly necessary.
+
+```{r ssmiAGprice, echo = FALSE, fig.cap= "In-sample SMI price and corresponding log-returns (2010–2019).", out.width="70%"}
+  price <- px_list$SSMI$SSMI.Adjusted
+  ret <- na.omit((suppressWarnings(diff(log(price)))))
+
+  # In and out of sample definieren
+  in_sample<-min(common_idx) #we want to then be out of sample at min(common_idx)
+  
+  ret_out<-ret[paste(in_sample,"/",sep="")]
+  ret_in  <- ret[!index(ret) %in% index(ret_out)]
+  
+  par(mfrow = c(2,1))
+  plot(price[index(ret_in)], main = "In Sample SMI Price")
+  plot(ret_in, main = "In Sample SMI Log-Returns")
+```
+
+After defining the in-sample log-returns of the SMI, the next step was
+to identify a suitable ARMA-GARCH specification for modelling both the
+conditional mean and variance dynamics of returns.
+
+Several ARMA–GARCH models were fitted to the in-sample returns, the
+ARMA(1,1)–GARCH(1,1) with normal errors serves as a great bench line and
+model parameters were reduced from that point as well as the
+distributional assumptions.
+
+All models passed the Ljung-box residual diagnostics tests both for the
+mean level equation and the variance equation. Only the distributional
+assumptions were not sufficient, no matter the chosen distribution. This
+is a common issue in financial time series modelling, and therefore not
+considered critical here.
+
+Both the AR(1)-GARCH(1,1) and the MA(1)-GARCH(1,1) specifications with
+skewed-Student-t errors achieved similar BIC values; however, the AR(1)
+version was preferred for its simpler interpretation and ease of
+out-of-sample forecasting.
+
+::: example
+SMI Model Esimation
+
+```{r, echo=TRUE, eval=FALSE}
+  fit<-garchFit(~arma(1,1)+garch(1,1),data=ret_in,delta=2,
+                include.delta=F,include.mean=T, cond.dist = "norm")
+  s<-summary(fit)
+  s$stat_tests #All diagnostics okay, except for distributional assumptions
+  s$ics #BIC = -6.653617
+  
+  #---
+  fit2<-garchFit(~arma(1,1)+garch(1,1),data=ret_in,delta=2,
+                include.delta=F,include.mean=T, cond.dist = "sstd")
+  s2<-summary(fit2)
+  s2$stat_tests #All diagnostics okay, except for distributional assumptions
+  s2$ics #BIC = -6.700768 
+  
+  #---
+  fit3<-garchFit(~arma(0,1)+garch(1,1),data=ret_in,delta=2,
+                 include.delta=F,include.mean=T,  cond.dist = "sstd")
+  s3<-summary(fit3)
+  s3$stat_tests #All diagnostics okay, except for distributional assumptions
+  s3$ics #BIC =  -6.703647
+  
+  #---
+  fit4<-garchFit(~arma(1,0)+garch(1,1),data=ret_in,delta=2,
+                 include.delta=F,include.mean=T,  cond.dist = "sstd")
+  s4<-summary(fit4)
+  s4$stat_tests #All diagnostics okay, except for distributional assumptions
+  s4$ics #BIC = -6.703622
+```
+:::
+
+### Estimation (in-sample)
+
+In the next step, the parameters of the selected models are estimated
+using data from the same in-sample period.
+
+### Forecasting and Backtesting (out-of-sample)
+
+During the out-of-sample period (2019-2025), one-step-ahead forecasts of
+both the mean return and the conditional volatility are generated
+recursively based on the estimated in-sample parameters and formulas for
+mean return forecasts (formula \@ref{eq:armamean}) and conditional
+volatility forecasts (formula \@ref{eq:garchvariance}). Because price
+levels $x_t$ are mostly non-stationary, models are estimated with
+log-returns: $y_t = log(x_t)-log(x_{t-1})$
+
+A long-only, volatility-scaled trading strategy is constructed from
+these forecasts:
+
+1.  **Position sizing\
+    **$$
+    w_t = \frac{1}{\sigma_t},
+    \qquad \mathbb{E}[w_t] = 1
+    $$
+
+    The position size decreases during periods of high predicted
+    volatility and increases when volatility is expected to be low. The
+    position sizes are then normalized so that their expected value
+    equals one, which implicitly allows for leveraging.
+
+2.  **Signal\
+    **$$
+    \text{signal}_t =
+    \begin{cases}
+    w_t, & \hat{y}_t > 0, \\[4pt]
+    0, & \text{otherwise}
+    \end{cases}
+    $$**\
+    **Positive expected returns lead to a long position, while negative
+    or zero forecasts result in a flat position.**\
+    **
+
+3.  **Strategy returns\
+    **$$
+    r_t = \text{signal}_t \cdot y_t
+    $$
+
+The same modelling and trading procedure is applied consistently across
+all assets, which enables a fair comparison of performance across
+markets.
+
+The implemented R function for the ARMA-GARCH function can be found in
+the Appendix \@ref(appendixA)
+
+**Example implementation on the SMI**
+
+The figure \@ref(fig:AGStrategy) shows the ARIMA-GARCH implementation
+using the SMI as the underlying asset. As visible in the visualization,
+volatility tends to increase during market downturns. For example, in
+2020 the sharp decline in prices is accompanied by elevated volatility,
+and the trading strategy responds by reducing position sizes
+accordingly.
+
+```{r AGStrategy, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="SMI ARMA-GARCH Strategy with GARCH Estimated Volatility and Trading Signal", out.width="90%", fig.align="center", fig.keep="last", fig.width=9, fig.height=7, dpi=300, results='hide'}
+
+
+
+dat <- strat_ag_arma_garch(price = px_list$SSMI$SSMI.Adjusted, 
+                           model = "arma(1,0) + garch(1,1)",
+                           return_strat = T)
+
+chartSeries(dat$price,
+            type = "line",
+            subset=date_from_to,
+            theme=chartTheme("white"), name = "SSMI ARMA-GARCH Strategy")
+addTA(dat$vola,col="red", type = "l", legend = "Estimated GARCH Volatility")
+addTA(dat$signal,col="grey", type = "h", legend = "Position Size (Signal)")
+
+
+
+
+```
+
+## Backtesting
+
+### Parameter Tuning {#sec:parametertuning}
+
+The purpose of the tuning step is to identify, for each strategy, the
+set of parameters that leads to the best in-sample performance, before
+being applied out-of-sample.
+
+The tuning follows a rolling window approach. Each iteration uses five
+years of historical data as a training set. Within that window, all
+possible parameter combinations from the grid are evaluated, and the one
+that performs best is selected. This chosen configuration is then used
+for the following year, the test year, before the window shifts forward
+by one year and the process repeats.
+
+The rolling window was chosen because it accounts for changing market
+conditions over time. Parameters of financial data is rarely constant,
+and estimates based on the full sample size or an expanding window would
+ignore structural shifts. Re-estimating parameters over using
+overlapping samples allows the model to adapt to these
+changes.[@ModelingFinancialTimeSeries]
+
+In addition, a lookback period is added before each test year to provide
+the historical data required by indicators such as moving averages or
+Bollinger Bands. This short “warm-up” phase overlaps with the end of the
+training window. This overlap does not create information leakage or
+bias; the lookback simply provides the historical context needed to
+initialize indicators, just as a real trader would rely on recent data
+at the start of a new period. The length of this "warm-up" period
+depends on the Parameters and specific needs of the Strategy.
+
+Performance during the tuning is measured by the annualized Sharpe
+ratio. The Sharpe ratio is used here because it has the same structure
+as the later test statistic, differing only in the volatility-clustering
+scaling of the returns.
+
+The Following Graphic is a visual aid of Rolling Window, it is an
+example not the exaxt implementation as the dates dont line up for ease
+of interpretation reasons and the "warm-up" period is also just a fixed
+length example.
+
+```{r fig-rolling-window, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Example of Rolling Window Tuning. This figure is a simplified visual aid for interpretation, dates and warm-up lengths are illustrative only.", out.width="70%", fig.align="center", fig.pos='H'}
+
+library(ggplot2)
+library(dplyr)
+
+# Years 2005–2015
+yrs <- 2005:2015
+
+# Window lengths
+train_len <- 5
+test_len  <- 1
+
+# Lookback (Warm-up)
+max_lb_days <- 200
+trading_days_per_year <- 252
+lb_years <- max_lb_days / trading_days_per_year  # fraction of a year
+
+# Iterations
+n_iter <- length(yrs) - train_len
+if (n_iter < 1) stop("Need at least 6 years between 2005–2015.")
+
+rows <- tibble(
+  iter        = 1:n_iter,
+  train_start = yrs[1:n_iter],
+  train_end   = yrs[train_len:(train_len + n_iter - 1)],
+  test_start  = yrs[(train_len + 1):(train_len + n_iter)],
+  test_end    = yrs[(train_len + 1):(train_len + n_iter)] + test_len - 1
+)
+
+# Overlap (Warm-up)
+overlap_start <- pmax(rows$test_start - lb_years, rows$train_start)
+overlap_end   <- rows$test_start
+
+# Main data blocks
+df_train_left <- rows |>
+  transmute(iter, type = "Training",
+            xmin = train_start, xmax = overlap_start,
+            ymin = iter - 0.35, ymax = iter + 0.35)
+
+df_overlap_train <- rows |>
+  transmute(iter, type = "Training (overlap)",
+            xmin = overlap_start, xmax = overlap_end,
+            ymin = iter, ymax = iter + 0.35)
+
+df_overlap_warm <- rows |>
+  transmute(iter, type = "Warm-up (lookback)",
+            xmin = overlap_start, xmax = overlap_end,
+            ymin = iter - 0.35, ymax = iter)
+
+df_test <- rows |>
+  transmute(iter, type = "Test",
+            xmin = test_start, xmax = test_end + 1,
+            ymin = iter - 0.35, ymax = iter + 0.35)
+
+# Colors
+cols <- c(
+  "Training"            = "#2E86DE",
+  "Training (overlap)"  = "#2E86DE",
+  "Warm-up (lookback)"  = "#00E5FF",
+  "Test"                = "#E67E22"
+)
+
+# Labels
+lab_train <- rows |>
+  transmute(iter,
+            x = (train_start + train_end + 1) / 2,
+            y = iter,
+            txt = paste(train_start, "-", train_end))
+
+lab_test <- rows |>
+  transmute(iter,
+            x = (test_start + test_end + 1) / 2,
+            y = iter,
+            txt = (test_start))
+
+ggplot() +
+  geom_rect(data = df_test,
+            aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = type)) +
+  geom_rect(data = df_train_left,
+            aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = type)) +
+  geom_rect(data = df_overlap_warm,
+            aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = type), alpha = 0.85) +
+  geom_rect(data = df_overlap_train,
+            aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = type)) +
+  geom_text(data = lab_train, aes(x = x, y = y, label = txt), color = "white", size = 3, fontface = "bold") +
+  geom_text(data = lab_test,  aes(x = x, y = y, label = txt), size = 3, fontface = "bold") +
+  scale_fill_manual(
+    values = cols,
+    breaks = c("Training", "Test", "Warm-up (lookback)"),   
+    labels = c("Training", "Test", "Warm-up"),
+    guide = guide_legend(override.aes = list(alpha = 1))    
+  ) +
+  scale_y_reverse(breaks = rows$iter) +
+  scale_x_continuous(breaks = 2005:2015, limits = c(2005, 2016)) +
+  labs(
+    x = "Year",
+    y = "Iteration",
+    fill = NULL
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.minor = element_blank(),
+    axis.ticks.y = element_blank(),
+    legend.position = "top",
+    legend.direction = "horizontal",
+    legend.title = element_blank()
+  )
+
+```
+
+### Strategy Returns
+
+Trading positions are signals $POS_t \in \{0, 1\}$ generated by trading
+strategies.\
+Daily log-returns are computed as:
+
+\begin{equation}\label{eq:logret}
+r_t = \log\!\left(\frac{P_t}{P_{t-1}}\right) \cdot POS_t
+\end{equation}
+
+$P_t$ is the adjusted closing price at time $t$.\
+These returns serve as the input for the evaluation of strategy
+performance.
+
+::: example
+\label{exm:backtest} Strategy log-returns function in R
+
+```{r, ref.label='backtest_logRet-fn', echo=TRUE, eval=FALSE}
+
+```
+:::
+
+## Portfolio Construction
+
+After generating individual strategy returns for each individual asset,
+performance should also be assessed on an overall portfolio. This
+portfolio is created in a next step.
+
+$R_{i,t}$ references simple returns, with $i$ corresponding to the asset
+and $t$ the time.\
+The portfolio return is calculated as the equal-weighted average of all
+simple returns:
+
+$$
+R_t^P = \frac{1}{N} \sum_{i=1}^{N} R_{i,t}
+$$
+
+The implementation in R is as follows:
+
+::: example
+\label{exm:portfolio} Portfolio construction function in R
+
+```{r, ref.label='create_portfolio-fn', echo=TRUE, eval=FALSE}
+
+```
+:::
+
+The reasoning behind using an equally weighted portfolio, as opposed to
+an optimized one such as in the Markowitz framework, is to maintain an
+unbiased and transparent comparison across trading strategies.
+
+The primary focus of this project lies in evaluating the effectiveness
+of the trading rules themselves rather than optimizing asset allocation.
+This approach ensures that each asset contributes equally to the
+portfolio’s performance, independent of characteristics such as
+volatility.
+
+Weight optimization would distort the visibility of the strategies
+characteristics and instead emphasize the performance of the underlying
+assets rather than the strategies themselves.
+
+\newpage
+
+## Evaluation criteria and testing {#ttesting}
+
+The Sharpe ratio is used as the primary evaluation metric because it
+provides a simple and comparable measure of performance across assets
+with very different volatility levels. Maximum Drawdown was not included
+because introducing an additional criterion on top of multiple
+strategies and asset categories would make the results harder to
+interpret. With so many layers of comparison already present, adding
+drawdown would dilute the focus and complicate the interpretation rather
+than enhance it. The aim is to keep the comparison clear and centred on
+one consistent performance measure.
+
+###Statistical Testing
+
+\hl{Revise this paragraph later.}
+
+To compare the performance of two trading strategies $A$ and $B$, a
+paired $t$-test is performed on their standardized log-return series.
+For each strategy $i \in \{A,B\}$, standardized returns are obtained by:
+
+$$
+z_t^{(i)} = \frac{r_t^{(i)}}{\hat\sigma_t^{(i)}}
+$$ $r_t^{(i)}$ is the series of strategy returns (as defined in Equation
+\@ref(eq:logret)) and $\hat\sigma_t^{(i)}$ the conditional standard
+deviations. For all filter-based strategies with binary exposure
+$POS_t \in \{0,1\}$, the volatility $\hat\sigma_t^{(i)}$ corresponds to
+the ticker price returns, as these strategies simply switch market by
+either being in or out and inherit the underlying asset’s risk during
+periods in the market. The ARMA-GARCH strategy, which uses continuously
+scaled position sizes $signal_t \in (0,1]$, is standardised using a
+separate GARCH(1,1) model fitted directly to its own strategy returns to
+ensure a consistent risk-adjusted comparison across all strategies.
+
+The paired $t$-statistic is defined as:
+
+$$
+d_t = z_t^{(A)} - z_t^{(B)}
+$$
+
+\begin{equation} \label{eq:tstat}
+t_{A,B} = \frac{\sqrt{n}\,\bar{d}}{s_d} \;\sim\; t_{n-1}
+\end{equation}
+
+$\bar{d}$ represents the mean of the differences and $s_d$ their
+empirical standard deviation.
+
+It is a nice coincidence that the structure of this test statistic is
+similar to a Sharpe ratio. It can conceptually be viewed as a
+Sharpe-type measure applied to the performance difference between the
+two strategies, showing how one performs relative to the other on a
+risk-adjusted basis.
+
+The null hypothesis is defined as:
+
+\begin{equation} \label{eq:H0}
+H_0\!:\! \mathbb{E}[d_t] = 0
+\end{equation}
+
+This implies that both strategies yield equal mean standardized returns,
+while the alternative hypothesis $H_A\!:\! \mathbb{E}[d_t] \neq 0$
+suggests a statistically significant performance difference.
+
+Since the returns are standardized using GARCH-based conditional
+volatilities, heteroskedasticity is accounted for. No correction for
+autocorrelation is applied, as the standardized daily returns can be
+reasonably assumed to be approximately uncorrelated.
+
+No formal correction for multiple testing is applied. Given that
+financial return series typically resemble white noise, any significant
+result under this framework is already somewhat unlikely. Applying
+conservative corrections such as Bonferroni adjustments would contibute
+to Type II errors and mask potentially meaningful differences. Thus,
+significance levels are to be interpreted cautiously rather than as
+definitive inferential evidence. [@hofer2023gstat]
+
+\hl{Table what i test against what.}
+
+## Case Study Financial Crisis
+
+\newpage

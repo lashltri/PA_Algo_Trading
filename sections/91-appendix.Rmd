@@ -1,0 +1,11 @@
+# Appendix {.unnumbered}
+
+## A. ARMA-GARCH Strategy Function {.unnumbered #appendixA}
+
+::: {#exm:agfun .example}
+\label{exm:agfun} ARMA-GARCH(1,1) function in R
+
+```{r, ref.label='strat_ag-fn', echo=TRUE, eval=FALSE}
+
+```
+:::

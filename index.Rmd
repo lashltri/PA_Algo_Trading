@@ -1,0 +1,78 @@
+---
+title: "" 
+author: ""
+date: ""
+language:
+  label:
+    exm: "Code Chunk "
+output:
+  bookdown::pdf_book:
+    toc: false
+    number_sections: true
+    includes:
+      in_header: preamble.tex
+    latex_engine: xelatex
+
+appendix:
+  number_sections: false
+
+bibliography: sample.bib
+csl: ieee.csl
+knit: "bookdown::render_book"
+---
+
+```{r setup, include=FALSE}
+#Setup R
+# Global options
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.align = "center",
+  fig.path = "figures/",
+  fig.pos='H', 
+  message=FALSE, warning=FALSE, results='hide'
+)
+
+# Load libraries
+library(quantmod)
+library(PerformanceAnalytics)
+library(lubridate)
+library(car)
+library(knitr)
+
+# Source your strategy / backtest code
+source("R/strategies.R")
+source("R/backtesting.R")
+source("R/Tuning.R")
+source("R/Analysis_Tuning.R")
+source("R/ARMA_GARCH/ARMA_GARCH_Forecasts.R")
+source("R/Hypothesis_Testing.R")
+source("R/Plots.R")
+
+
+# register the code chunks
+knitr::read_chunk("R/strategies.R")
+knitr::read_chunk("R/ARMA_GARCH/ARMA_GARCH_Forecasts.R")
+knitr::read_chunk("R/backtesting.R")
+knitr::read_chunk("R/Hypothesis_Testing.R")
+names(knitr::knit_code$get())
+
+#Set seed for reproducibility
+set.seed(123)
+```
+
+\includepdf[
+  pages=1,
+  pagecommand=\thispagestyle{empty},
+  width=\paperwidth,
+  height=\paperheight
+]{Titelseite_PA.pdf}
+
+\clearpage
+
+# Abstract {.unnumbered}
+
+This is a simple paragraph at the beginning of the document. A brief introduction about the main subject.
+
+\tableofcontents

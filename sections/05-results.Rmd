@@ -1,0 +1,880 @@
+---
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Results
+
+Overview of the Evaluation Framework
+
+## US Equity indices
+
+US Assets exhibit a stronger upward drift during the evaluation period
+than other indices, which is typical for US assets due to inflation, it
+is also worth noting that the currency of these assets is USD. The
+performance patterns are consistent across both U.S. indices, with the
+same strategies outperforming and underperforming this creates a clear
+picture.
+
+### Sharpe Ratios {#ussharpe}
+
+Table \@ref(tab:sharpeus) shows the Sharpe ratios of all strategies
+applied to the US equity indices (GSPC = S&P 500 and IXIC = NASDAQ).
+
+```{r sharpeus, echo=FALSE, results='asis'}
+library(knitr)
+
+us_assets <- c("GSPC", "IXIC")
+
+kable(
+  mat_sharpe[us_assets, ],
+  caption = "(#tab:sharpeus) Sharpe Ratios: US Markets (2019-2024)",
+  format = "simple",
+  align = "l"
+)
+
+```
+
+The volatility adjusted ARMA-GARCH trading strategy performed best
+(1.13-1.15), even compared to the Buy and Hold benchmark (0.77-0.79).
+The MCAD strategy also performs well (0.64–0.91). Simple Moving Averages
+don't stand out positively or negatively in this scenario. The Bollinger
+Bands strategy yields negative Sharpe ratios for both US indices.
+
+**ARMA GARCH**
+
+A plausible explanation for the strong performance of the ARMA-GARCH
+strategy in US markets is the combination of upward trends and
+volatility clustering. The GARCH component models periods of elevated
+and low volatility and allows the strategy to adjust its position size
+accordingly. Volatility clustering during negative downturns allowed
+ARMA-GARCH to scale exposure down in turbulent periods and increase
+exposure during calmer, more predictable phases.
+
+This effect can be seen in the figure \@ref(fig:usixicag) below using
+the IXIC ticker as an example. The ARMA-GARCH strategy shows a stable
+growth pattern. During the downturn in 2020, the strategy reduces its
+position because volatility rises sharply, which in turn dampens the
+impact of the drawdown.
+
+```{r usixicag, echo=FALSE, fig.cap="IXIC ticker and ARMA–GARCH strategy", out.width="60%", fig.keep="last", message=FALSE, warning=FALSE, results='hide'}
+
+par(mfrow = c(1,2))
+
+# --- IXIC ---------------------------------------------------------
+dat_gspc <- strat_ag_arma_garch(
+  price = px_list$IXIC$IXIC.Adjusted,
+  model = "arma(1,0) + garch(1,1)",
+  return_strat = TRUE
+)
+
+par(mar = c(4, 4, 2, 2), mfrow = c(3, 1))
+
+cum_ag <- exp(cumsum(na.omit(BACKT$AG$IXIC))) - 1
+cum_bh <- exp(cumsum(na.omit(BACKT$BH$IXIC[index(BACKT$AG$IXIC)]))) - 1
+
+
+plot(cum_bh, lwd=2,
+     main="IXIC: Cumulative Returns (BH)",
+     ylab="Cumulative return", xlab="Time")
+plot(cum_ag, lwd=2,
+     main="IXIC: Cumulative Returns (AG)",
+     ylab="Cumulative return", xlab="Time")
+
+plot(dat_gspc$vola, main = "IXIC GARCH volatility estimates")
+
+```
+
+This pattern is consistent with recent evidence showing that U.S. equity
+markets exhibit sharper and more persistent volatility reactions to
+major shocks than other regions, particularly during geopolitical or
+macroeconomic stress periods.[@usvola]
+
+**Bollinger Bands**
+
+Figure \@ref(fig:usixicbb) compares the cumulative returns of Buy and
+Hold and the Bollinger Bands strategy on the IXIC. While the Buy and
+Hold index has a strong upward movement, the BB strategy loses value
+almost continuously, especially during the smooth upswing beginning in
+2020.
+
+```{r usixicbb, echo=FALSE,fig.cap="IXIC: Cumulative returns of Buy-and-Hold and the Bollinger Bands strategy", out.width="60%", fig.keep="last", message=FALSE, warning=FALSE, results='hide'}
+
+# --- IXIC ---------------------------------------------------------
+par(mar = c(4, 4, 2, 2), mfrow = c(2, 1))
+
+cum_ag <- exp(cumsum(na.omit(BACKT$BB$IXIC))) - 1
+cum_bh <- exp(cumsum(na.omit(BACKT$BH$IXIC[index(BACKT$BB$IXIC)]))) - 1
+
+
+plot(cum_bh, lwd=2,
+     main="IXIC: Cumulative Returns (BH)",
+     ylab="Cumulative return", xlab="Time")
+plot(cum_ag, lwd=2,
+     main="IXIC: Cumulative Returns (BB)",
+     ylab="Cumulative return", xlab="Time")
+
+```
+
+In Figure \@ref(fig:usixicbb2), the behaviour during the strong upswing
+in 2020 after an initial chrash. The IXIC’s upward movement is smooth
+and steady, but the Bollinger Band rule only reacts to explosive
+breakouts. Since these breakouts do not occur, the strategy remains out
+of the market and misses the beginning of the upswing.
+
+```{r usixicbb2, echo=FALSE, fig.cap="IXIC Bollinger Bands strategy during the 2020–2021 upswing", out.width="65%", fig.keep="last", message=FALSE, warning=FALSE, results='hide'}
+
+mavg <- STRATS$BB$IXIC$strategy$mavg
+up <- STRATS$BB$IXIC$strategy$up
+dn <- STRATS$BB$IXIC$strategy$dn
+signal <- STRATS$BB$IXIC$signal
+from_to<-"2020-01-01::2021-12-30"
+
+chartSeries(STRATS$BB$IXIC$price,
+            type = "line",
+            subset = from_to,
+            theme=chartTheme("white"), name = "IXIC BB Strategy")
+addTA(mavg,type="S",col="blue", on = 1)
+addTA(up,type="S",col="darkgrey", on = 1, lty = 2)
+addTA(dn,type="S",col="darkgrey", on = 1, lty = 2)
+addTA(signal,col="grey", type = "h")
+
+```
+
+Figure \@ref(fig:usixicbb3) shows a more turbulent period during the
+decline in 2022–2023. During this downswing, the BB strategy reacts more
+frequently as the price crosses the lower band. This makes it more
+responsive and helps avoid some of the deeper losses.
+
+```{r usixicbb3, echo=FALSE, fig.cap="IXIC Bollinger Bands strategy during the 2022–2023 downswing", out.width="65%", fig.keep="last", message=FALSE, warning=FALSE, results='hide'}
+
+mavg <- STRATS$BB$IXIC$strategy$mavg
+up <- STRATS$BB$IXIC$strategy$up
+dn <- STRATS$BB$IXIC$strategy$dn
+signal <- STRATS$BB$IXIC$signal
+from_to<-"2022-01-01::2023-06-30"
+
+chartSeries(STRATS$BB$IXIC$price,
+            type = "line",
+            subset = from_to,
+            theme=chartTheme("white"), name = "IXIC BB Strategy")
+addTA(mavg,type="S",col="blue", on = 1)
+addTA(up,type="S",col="darkgrey", on = 1, lty = 2)
+addTA(dn,type="S",col="darkgrey", on = 1, lty = 2)
+addTA(signal,col="grey", type = "h")
+
+```
+
+Similar patterns as those observed for the IXIC also appear for the
+GSPC. This suggests that the Bollinger Bands strategy struggles in
+high-inflation environments \newpage \### Statistical Comparison of
+Standardized Strategy Returns (Paired Hypothesis Tests)
+
+To evaluate whether performance differences between strategies are
+statistically meaningful, paired t-tests are applied to the standardized
+return series of each strategy. Standardization (see Section
+\@ref(ttesting)) reduces heteroskedasticity and brings the data closer
+to independence, making the t-test more reliable. Figure
+\@ref(fig:ussigall) shows the resulting significance matrices for the
+two US indices (GSPC and IXIC) across all strategies at the 10% level.
+
+```{r ussigall, echo=FALSE, fig.cap="Paired t-tests on standardized returns for all strategies on GSPC and IXIC (p < 0.1). Significant positive differences are shown in orange, negative differences in blue.", out.width="95%"}
+
+# US asset names
+us_assets <- c("GSPC", "IXIC")
+
+# Filter once
+US_TVALS <- ALL_TVALS_DIR[ALL_TVALS_DIR$ticker %in% us_assets, ]
+
+
+#p_bh   <- plot_p_matrix_sig_soft(US_TVALS, "BH")
+p_ma   <- plot_p_matrix_sig_soft(US_TVALS, "MA")
+p_bb   <- plot_p_matrix_sig_soft(US_TVALS, "BB")
+p_ag   <- plot_p_matrix_sig_soft(US_TVALS, "AG")
+p_macd <- plot_p_matrix_sig_soft(US_TVALS, "MACD")
+
+# Empty plot so MACD has a partner in the last row
+blank_plot <- ggplot2::ggplot() + ggplot2::theme_void()
+
+# 2 plots per row
+combined_plots <- cowplot::plot_grid(
+  p_ma,
+  p_bb,   p_ag,
+  p_macd,
+  ncol = 2,
+  align = "hv"
+)
+# # Plot all significance matrices
+final_plot <- cowplot::plot_grid(
+  combined_plots,
+  fixed_legend,
+  ncol = 1,
+  rel_heights = c(1, 0.12)
+)
+
+print(final_plot)
+
+
+
+```
+
+For the U.S. indices examined, the ARMA-GARCH strategy shows
+statistically significant higher standardized cumulative returns over
+each of the other strategies on at least one index. The Buy-and-Hold
+benchmark is the only strategy for which no statistically significant
+difference is detected.
+
+Most noticeably, the Bollinger Bands strategy performs significantly
+lower all other strategies. As discussed in Section \@ref(ussharpe), the
+strategy at times remains out of the market during long, smooth uptrends
+and therefore fails to capitalize on the positive returns in these
+periods.
+
+No other systematic significance patterns appear. The only isolated
+finding is a significantly lower performance of the Moving Average
+strategy relative to Buy and Hold for the GSPC index. As this arises
+within a multiple-testing framework without correction, the result
+should be viewed with caution.
+
+\newpage
+
+## European Equity indices
+
+This section examines two European equity indices, which show a steadier
+and less pronounced upward trend than the US market, shaping the
+performance of the strategies applied. \### Sharpe Ratios
+
+Table \@ref(tab:sharpeeu) shows the Sharpe ratios for the European
+equity indices (SSMI = Swiss Market Index and GDAXI = DAX
+Perfomance-Index). Compared to the US indices, both markets exhibit
+noticeably weaker performance during 2019–2024 in their naitive
+currencies.
+
+```{r sharpeeu, echo=FALSE, results='asis'}
+use_assets <- c("SSMI", "GDAXI")
+
+kable(
+  mat_sharpe[use_assets, ],
+  caption = "(#tab:sharpeeu) Sharpe Ratios: European Markets",
+  format = "simple",
+  align = "l")
+```
+
+The SSMI shows the lowest Sharpe ratios among all equity indices. A
+central reason is Switzerland’s persistently low inflation and strong
+CHF, which leads to weaker trend behaviour. As a result MA and BB
+perform poorly.
+
+The ARMA-GARCH strategy outperforms Buy and Hold for both European
+assets, but not as noticeably as the MCAD strategy. Overall, the
+performance patterns consistent across both European indices, with the
+same strategies outperforming and underperforming.
+
+**MACD**
+
+Figure \@ref(fig:eumacd) shows that both the Buy and Hold and the MACD
+strategy reach a similar cumulative return on the GDAX Iover the
+evaluation period. The reason the MACD strategy follows a smoother path
+achieving a higher Sharpe ratio. A sharp downturn can be seen in the Buy
+and Hold returns in 2020. The MACD strategy smooths that period to a
+degree where the downturn in the underlying price is barely observed.
+
+```{r eumacd, echo=FALSE,fig.cap="GDAXI: Cumulative returns of Buy-and-Hold and the MACD strategy", out.width="65%", fig.keep="last", message=FALSE, warning=FALSE, results='hide'}
+
+# --- IXIC ---------------------------------------------------------
+par(mar = c(4, 4, 2, 2), mfrow = c(2, 1))
+
+cum_macd <- exp(cumsum(na.omit(BACKT$MACD$GDAXI))) - 1
+cum_bh <- exp(cumsum(na.omit(BACKT$BH$GDAXI[index(BACKT$BB$GDAXI)]))) - 1
+
+
+plot(cum_bh, lwd=2,
+     main="GDAXI: Cumulative Returns (BH)",
+     ylab="Cumulative return", xlab="Time")
+plot(cum_macd, lwd=2,
+     main="GDAXI: Cumulative Returns (MACD)",
+     ylab="Cumulative return", xlab="Time")
+
+```
+
+the following Figure \@ref(fig:eumacddown) illustrates the behavior
+behaviour during the downturn in early 2020 in more detail. While the
+underlying GDAX index (green line) falls rapidly, the MACD strategy says
+out of the market for most of the decline. The position is changed
+almost instantly after the momentum of the underlying price changes.
+Though not highlighted in a plot other strategies reacted later and did
+not fair as well during this period. This is due to the strategy’s quick
+reaction to momentum shifts before the crash, as it relies on relatively
+short lookback windows.
+
+```{r eumacddown, echo=FALSE, fig.cap = "GDAXI MACD strategy during the 2020 downturn. MACD line (blue), signal line (red), histogram (dark grey), and trading signals (grey).", out.width="65%", fig.keep="last", message=FALSE, warning=FALSE, results='hide'}
+
+from_to <- "2019-11-01::2020-11-01"
+
+price   <- STRATS$MACD$GDAXI$price
+price   <- STRATS$MACD$GDAXI$price
+signal  <- STRATS$MACD$GDAXI$signal
+
+macd_line   <- STRATS$MACD$GDAXI$strategy$macd
+signal_line <- STRATS$MACD$GDAXI$strategy$signal
+macd_hist   <- macd_line - signal_line
+
+chartSeries(price,
+            type   = "line",
+            subset = from_to,
+            theme  = chartTheme("white"),
+            name   = "GDAXI MACD Strategy")
+
+## 1) MACD indicator in panel 2
+addTA(macd_line,   type = "l", col = "blue", on = NA, legend = NULL)  # creates panel 2
+addTA(signal_line, type = "l", col = "red",  on = 2)   # same panel as MACD
+addTA(macd_hist,      type = "h", col = "darkgrey", on = 2)
+
+
+## 2) Trading signals in panel 3
+addTA(signal, type = "h", col = "grey", on = NA)   # creates panel 3
+
+
+
+
+```
+
+**Bollinger Bands**
+
+Figure \@ref(fig:eubb) compares the cumulative returns of the
+Buy-and-Hold benchmark and the Bollinger Bands strategy for the GDAXI
+ticker. The strategy exits the market too late during the downturn in
+early 2020 and misses a substantial part of the subsequent recovery.
+Another noticeable feature is that the long and steady trend phase in
+2023 and 2024 is not captured, as the price remains inside the bands for
+most of the period. As discussed earlier, the Bollinger Bands strategy
+tends to react only to sharper price movements, causing it to miss
+extended moderate trends.
+
+```{r eubb, echo=FALSE,fig.cap="GDAXI: Cumulative returns of Buy-and-Hold and the Bollinger Bands strategy", out.width="65%", fig.keep="last", message=FALSE, warning=FALSE, results='hide'}
+
+# --- IXIC ---------------------------------------------------------
+par(mar = c(4, 4, 2, 2), mfrow = c(2, 1))
+
+cum_bb <- exp(cumsum(na.omit(BACKT$BB$GDAXI))) - 1
+cum_bh <- exp(cumsum(na.omit(BACKT$BH$GDAXI[index(BACKT$BB$GDAXI)]))) - 1
+
+
+plot(cum_bh, lwd=2,
+     main="GDAX: Cumulative Returns (BH)",
+     ylab="Cumulative return", xlab="Time")
+plot(cum_bb, lwd=2,
+     main="GDAX: Cumulative Returns (BB)",
+     ylab="Cumulative return", xlab="Time")
+```
+
+The Bollinger strategy changes the position when the price moves above
+the upper band or below the lower band. These bands are based on
+volatility which means they are wider during times of high volatility.
+High volatility is often the case during downturns as investors rush to
+unwind positions and respond to rising uncertainty. Figure
+\@ref(fig:eumbbdown) illustrates this effect during the sharp downturn
+in early 2020, volatility spikes and the bands expand, causing the lower
+band to sit far below the falling price. As a result, the strategy exits
+the market only after most of the decline has already occurred, and it
+enters late when the recovery begins. This dynamic explains why the
+Bollinger Band strategy often fails to capture both sudden downturns and
+subsequent recoveries.
+
+```{r eumbbdown, echo=FALSE, fig.cap = "GDAXI Bollinger Band strategy during the 2020 downturn.", out.width="65%", fig.keep="last", message=FALSE, warning=FALSE, results='hide'}
+
+mavg <- STRATS$BB$GDAXI$strategy$mavg
+up <- STRATS$BB$GDAXI$strategy$up
+dn <- STRATS$BB$GDAXI$strategy$dn
+signal <- STRATS$BB$GDAXI$signal
+from_to<-"2019-06-01::2021-12-30"
+
+chartSeries(STRATS$BB$GDAXI$price,
+            type = "line",
+            subset = from_to,
+            theme=chartTheme("white"), name = "GDAXI BB Strategy")
+zoomChart(from_to)
+addTA(mavg,type="S",col="blue", on = 1)
+addTA(up,type="S",col="darkgrey", on = 1, lty = 2)
+addTA(dn,type="S",col="darkgrey", on = 1, lty = 2)
+addTA(signal,col="grey", type = "h")
+```
+
+\newpage
+
+### Statistical Comparison of Standardized Strategy Returns (Paired Hypothesis Tests)
+
+Figure @ref(fig:eusignal) summarises the paired t-tests on
+time-dependent variance-standardized returns for the two European
+indices. Most patterns observed in the Sharpe ratios for European
+markets are shown to be non-significant. Overall, only very few
+differences between strategies reach statistical significance at the 10%
+level, indicating that performance gaps across strategies are generally
+weak or inconsistent in the European markets. For the GDAXI, significant
+results occur for the Bollinger Bands strategy. It performs
+significantly worse than both Buy and Hold, MACD and ARMA - GARCH,
+confirming the earlier observation that the rule struggles in smooth
+upward trends and reacts too late during downturns. In contrast, the
+significant positive result for MACD when compared to the Bollinger
+Bands strategy is consistent with its ability to reduce exposure earlier
+and capture recoveries more effectively. However, when scaled by
+time-varying volatility, the returns of the MACD strategy were not
+significantly better than those of the other strategies. For the SSMI,
+none of the strategy comparisons reach significance.
+
+Overall, the results reinforce the conclusion that Bollinger Bands
+underperform in European markets, while the remaining strategies,
+including MACD, do not differ significantly from one another. These
+findings should be interpreted with caution, as no adjustments for
+multiple testing are applied.
+
+```{r eusignal, echo=FALSE, fig.cap="Paired t-tests on standardized returns for all strategies on GSPC and IXIC (p < 0.1). Significant positive differences are shown in orange, negative differences in blue.", out.width="95%"}
+
+# US asset names
+use_assets <- c("SSMI", "GDAXI")
+
+# Filter once
+USE_TVALS <- ALL_TVALS_DIR[ALL_TVALS_DIR$ticker %in% use_assets, ]
+
+
+#p_bh   <- plot_p_matrix_sig_soft(US_TVALS, "BH")
+p_ma   <- plot_p_matrix_sig_soft(USE_TVALS, "MA")
+p_bb   <- plot_p_matrix_sig_soft(USE_TVALS, "BB")
+p_ag   <- plot_p_matrix_sig_soft(USE_TVALS, "AG")
+p_macd <- plot_p_matrix_sig_soft(USE_TVALS, "MACD")
+
+# Empty plot so MACD has a partner in the last row
+blank_plot <- ggplot2::ggplot() + ggplot2::theme_void()
+
+# 2 plots per row
+combined_plots <- cowplot::plot_grid(
+  p_ma,
+  p_bb,   p_ag,
+  p_macd,
+  ncol = 2,
+  align = "hv"
+)
+# # Plot all significance matrices
+final_plot <- cowplot::plot_grid(
+  combined_plots,
+  fixed_legend,
+  ncol = 1,
+  rel_heights = c(1, 0.12)
+)
+
+print(final_plot)
+
+```
+
+\newpage
+
+## Energy commodities
+
+Energy markets, such as crude oil (CL=F) and natural gas (NG=F) behave
+very differently from stock indices. Their prices are often influenced
+by things like, seasonal demand patterns, weather conditios, storage
+levels, and geopolitical events, all of which can produce irregular
+trends. These characteristics make commodities generally harder to model
+and more volatile than traditional financial assets, which affects how
+well different trading strategies perform.
+
+### Sharpe Ratios
+
+Table \@ref(tab:sharpeenergy) shows the Sharpe ratios for crude oil and
+natural gas. Both markets perform very poorly across almost all trading
+strategies. The strategies that perform relatively better, as well as
+those that perform worse, differ between the two assets and do not
+provide a consistent pattern for the energy category. This suggests that
+crude oil and natural gas behave fundamentally differently and cannot be
+treated as a homogeneous asset group.
+
+```{r sharpeenergy, echo=FALSE, results='asis'}
+energy_assets <- c("CL=F", "NG=F")
+
+kable(
+  mat_sharpe[energy_assets, ],
+  caption = "(#tab:sharpeenergy) Sharpe Ratios: Energy Commodities",
+  format = "simple",
+  align = "l")
+```
+
+For crude oil, the only positive Sharpe ratio appears under
+Buy-and-Hold, while all active strategies perform worse. Crude Oil did
+not exhibit persistent trends or exploitable momentum during the sample
+period, making slow-moving or threshold-based rules ineffective. The
+price series even contains negative prices, reflecting the extraordinary
+market conditions during the 2020 oil market collapse, when storage
+costs surged and producers were effectively paying buyers to take
+delivery[@NegativeOilPrices]. The lack of trends can is visualized in
+the following figure \@ref(fig:clfprice).
+
+```{r clfprice, echo=FALSE, fig.cap="Price and Log-Returns of the CL=F (2019-2024)", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE, results='hide'}
+
+par(mfrow = c(2,1))
+plot(STRATS$BH$`CL=F`$price["2019-01-01::2024-12-30"], main = "CL=F Price")
+plot(diff(log(STRATS$BH$`CL=F`$price["2019-01-01::2024-12-30"])), main = "CL=F Price")
+```
+
+Natural gas, shows a negative Sharpe ratio under Buy and Hold and weak
+performance across almost all strategies. ARMA-GARCH shows the highest
+Sharpe ratio, this improvement is driven mainly by reducing exposure
+during high volatility during the downturn at the end of the sample
+period.
+
+**ARMA-GARCH**
+
+Figure @ref(fig:agngf) shows the cumulative returns of the ARMA-GARCH
+strategy compared to Buy and Hold for NG=F. The ARMA-GARCH curve rises
+smoothly and steadily even though the underlying price is extremely
+volatile. The strategy performs exceptionally well on natural gas
+because the asset exhibits very strong volatility clustering and large
+volatility spikes. The volatility-scaled position sizing reduces
+exposure dramatically during turbulent periods and increases it in calm
+phases. This allows the strategy to avoid major drawdowns while still
+profiting from growth during low volatility periods.
+
+```{r agngf, echo=FALSE, fig.cap="NG=F: ARMA-GARCH vs Buy-and-Hold", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE}
+
+dat_ng <- strat_ag_arma_garch(
+  price        = px_list$`NG=F`$`NG=F.Adjusted`,
+  model        = "arma(1,0) + garch(1,1)",
+  return_strat = TRUE
+)
+
+par(mar = c(4, 4, 2, 2), mfrow = c(3, 1))
+
+cum_ag <- exp(cumsum(na.omit(BACKT$AG$`NG=F`))) - 1
+cum_bh <- exp(cumsum(na.omit(BACKT$BH$`NG=F`[index(BACKT$AG$`NG=F`)]))) - 1
+
+plot(cum_bh, lwd=2,
+     main="NG=F: Cumulative Returns (BH)",
+     ylab="Cumulative return", xlab="Time")
+plot(cum_ag, lwd=2,
+     main="NG=F: Cumulative Returns (AG)",
+     ylab="Cumulative return", xlab="Time")
+
+plot(dat_ng$vola, main = "NG=F GARCH volatility estimates")
+
+```
+
+Natural gas has very high kurtosis, meaning thereturn distribution
+contains many extreme values and heavy tails[@gasvola]. The stimated
+GARCH parameters (α = 0.065, β = 0.920, α + β ≈ 0.985) show that
+volatility shocks decay slowly. Markets with these attributes have
+strong volatility clustering, where big price shocks are followed by
+several days of high volatility. GARCH models work well in these
+environments because the high volatility is easier to predict from one
+day to the next. This helps explain why ARMA-GARCH performs so well for
+natural gas, where extreme movements are often followed by long periods
+of elevated volatility.
+
+\newpage
+
+### Statistical Comparison of Standardized Strategy Returns (Paired Hypothesis Tests)
+
+Figure @ref(fig:energysignal) summarises the paired t-tests on
+conditional variance-standardized returns for crude oil (CL=F) and
+natural gas (NG=F). The differences between the trading methods are all
+non significant. This is a typical for many financial time series. The
+effects described in the previous section are all non significant based
+on the test statistics.
+
+```{r energysignal, echo=FALSE, fig.cap="Paired t-tests on standardized returns for all strategies on CL=F and NG=F (p < 0.1). Significant positive differences are shown in orange, negative differences in blue.", out.width="95%"}
+
+# US asset names
+use_assets <- c("CL=F", "NG=F")
+
+# Filter once
+USE_TVALS <- ALL_TVALS_DIR[ALL_TVALS_DIR$ticker %in% use_assets, ]
+
+
+#p_bh   <- plot_p_matrix_sig_soft(US_TVALS, "BH")
+p_ma   <- plot_p_matrix_sig_soft(USE_TVALS, "MA")
+p_bb   <- plot_p_matrix_sig_soft(USE_TVALS, "BB")
+p_ag   <- plot_p_matrix_sig_soft(USE_TVALS, "AG")
+p_macd <- plot_p_matrix_sig_soft(USE_TVALS, "MACD")
+
+# Empty plot so MACD has a partner in the last row
+blank_plot <- ggplot2::ggplot() + ggplot2::theme_void()
+
+# 2 plots per row
+combined_plots <- cowplot::plot_grid(
+  p_ma,
+  p_bb,   p_ag,
+  p_macd,
+  ncol = 2,
+  align = "hv"
+)
+# # Plot all significance matrices
+final_plot <- cowplot::plot_grid(
+  combined_plots,
+  fixed_legend,
+  ncol = 1,
+  rel_heights = c(1, 0.12)
+)
+
+print(final_plot)
+
+```
+
+\newpage
+
+## Metals
+
+The metals group, consists of gold (GC=F), silver (SI=F), and copper
+(HG=F) these assets are widely know as safe havens. Because these
+markets differ strongly in volatility patterns and trend behaviour, the
+strategies are expected to perform differently across the three
+contracts. \### Sharpe Ratios Table @ref(tab:sharpemetals) shows that
+the ARMA-GARCH strategy achieves the highest Sharpe ratio concistently
+across all three metals, outperforming ever the Buy and Hold. The
+results of the other methods vary between the metals.
+
+```{r sharpemetal, echo=FALSE, results='asis'}
+metal_assets <- c("GC=F", "SI=F", "HG=F")
+
+kable(
+  mat_sharpe[metal_assets, ],
+  caption = "(#tab:sharpemetals) Sharpe Ratios: Metals",
+  format = "simple",
+  align = "l")
+```
+
+**ARMA-GARCH**
+
+Figure @ref(fig:agGC) shows the cumulative returns of the ARMA-GARCH
+compared to the Buy and Hold strategy for gold. The strategy delivers a
+noticeably smoother return path. In the long periods of relatively low
+and stable volatility that follow. While Buy and Hold benefits from
+gold’s overall upward trend, ARMA-GARCH has a more controlled return
+profile with more stable growth.
+
+```{r agGC, echo=FALSE, fig.cap="GC=F: ARMA-GARCH vs Buy-and-Hold", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE}
+dat_ng <- strat_ag_arma_garch(
+  price        = px_list$`GC=F`$`GC=F.Adjusted`,
+  model        = "arma(1,0) + garch(1,1)",
+  return_strat = TRUE
+)
+
+par(mar = c(4, 4, 2, 2), mfrow = c(3, 1))
+
+cum_ag <- exp(cumsum(na.omit(BACKT$AG$`GC=F`))) - 1
+cum_bh <- exp(cumsum(na.omit(BACKT$BH$`GC=F`[index(BACKT$AG$`GC=F`)]))) - 1
+
+plot(cum_bh, lwd=2,
+     main="GC=F: Cumulative Returns (BH)",
+     ylab="Cumulative return", xlab="Time")
+plot(cum_ag, lwd=2,
+     main="GC=F: Cumulative Returns (AG)",
+     ylab="Cumulative return", xlab="Time")
+
+plot(dat_ng$vola, main = "GC=F GARCH volatility estimates")
+```
+
+Silver shows a smooth development over the sample period and the
+ARMA-GARCH strategy ends at about the same cumulative return level as
+Buy and Hold. The main difference is fewer fluctuations. The only
+notable setback occurs during the volatility spike in early 2020, where
+the drawdown is similar to Buy and Hold. Apart from that period, the
+performance remains stable and free of major swings. The volatility of
+silver is higher than gold and the clusters tend to last longer.
+
+```{r agSI, echo=FALSE, fig.cap="SI=F: ARMA-GARCH vs Buy-and-Hold", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE}
+
+dat_ng <- strat_ag_arma_garch(
+  price        = px_list$`SI=F`$`SI=F.Adjusted`,
+  model        = "arma(1,0) + garch(1,1)",
+  return_strat = TRUE
+)
+
+par(mar = c(4, 4, 2, 2), mfrow = c(3, 1))
+
+cum_ag <- exp(cumsum(na.omit(BACKT$AG$`SI=F`))) - 1
+cum_bh <- exp(cumsum(na.omit(BACKT$BH$`SI=F`[index(BACKT$AG$`SI=F`)]))) - 1
+
+plot(cum_bh, lwd=2,
+     main="SI=F: Cumulative Returns (BH)",
+     ylab="Cumulative return", xlab="Time")
+plot(cum_ag, lwd=2,
+     main="SI=F: Cumulative Returns (AG)",
+     ylab="Cumulative return", xlab="Time")
+
+plot(dat_ng$vola, main = "SI=F GARCH volatility estimates")
+```
+
+```{r agHG, echo=FALSE, fig.cap="HG=F: ARMA-GARCH vs Buy-and-Hold", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE}
+
+dat_ng <- strat_ag_arma_garch(
+  price        = px_list$`HG=F`$`HG=F.Adjusted`,
+  model        = "arma(1,0) + garch(1,1)",
+  return_strat = TRUE
+)
+
+par(mar = c(4, 4, 2, 2), mfrow = c(3, 1))
+
+cum_ag <- exp(cumsum(na.omit(BACKT$AG$`HG=F`))) - 1
+cum_bh <- exp(cumsum(na.omit(BACKT$BH$`HG=F`[index(BACKT$AG$`HG=F`)]))) - 1
+
+plot(cum_bh, lwd=2,
+     main="HG=F: Cumulative Returns (BH)",
+     ylab="Cumulative return", xlab="Time")
+plot(cum_ag, lwd=2,
+     main="HG=F: Cumulative Returns (AG)",
+     ylab="Cumulative return", xlab="Time")
+
+plot(dat_ng$vola, main = "HG=F GARCH volatility estimates")
+```
+
+```{r}
+mavg <- STRATS$BB$`HG=F`$strategy$mavg
+up <- STRATS$BB$`HG=F`$strategy$up
+dn <- STRATS$BB$`HG=F`$strategy$dn
+signal <- STRATS$BB$`HG=F`$signal
+#from_to<-"2019-06-01::2021-12-30"
+
+chartSeries(STRATS$BB$`HG=F`$price,
+            type = "line",
+            #subset = from_to,
+            theme=chartTheme("white"), name = "HG=F BB Strategy")
+
+addTA(mavg,type="S",col="blue", on = 1)
+addTA(up,type="S",col="darkgrey", on = 1, lty = 2)
+addTA(dn,type="S",col="darkgrey", on = 1, lty = 2)
+addTA(signal,col="grey", type = "h")
+```
+
+```{r}
+par(mar = c(5, 4, 4, 2) + 1)
+dat <- px_list$`GC=F`$`GC=F.Adjusted`
+SMA_N1 <- STRATS$MA$`GC=F`$strategy$`SMA short`
+SMA_N2 <- STRATS$MA$`GC=F`$strategy$`SMA long`
+signal <- STRATS$MA$`GC=F`$signal
+
+chartSeries(dat, name = "SSMI MA Strategy",
+            type = "line",
+            subset=date_from_to,
+            theme=chartTheme("white"))
+addTA(SMA_N1,col="red", on = 1)
+addTA(SMA_N2,col="blue", on = 1)
+addTA(signal,col="grey")
+```
+
+```{r mettrend, echo=FALSE, fig.cap="Price and Log-Returns of the SSMI (2019-2024)", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE, results='hide'}
+
+
+# --- SSMI ---------------------------------------------------------
+
+par(mfrow = c(2,1))
+plot(STRATS$BH$SSMI$price, main = "SSMI Price")
+plot(diff(log(STRATS$BH$SSMI$price)), main = "SSMI log-Returns")
+
+```
+
+```{r}
+from_to <- "2019-11-01::2020-11-01"
+
+price   <- STRATS$MACD$`GC=F`$price
+signal  <- STRATS$MACD$`GC=F`$signal
+
+macd_line   <- STRATS$MACD$`GC=F`$strategy$macd
+signal_line <- STRATS$MACD$`GC=F`$strategy$signal
+macd_hist   <- macd_line - signal_line
+
+chartSeries(price,
+            type   = "line",
+            subset = from_to,
+            theme  = chartTheme("white"),
+            name   = "GDAXI MACD Strategy")
+
+## 1) MACD indicator in panel 2
+addTA(macd_line,   type = "l", col = "blue", on = NA, legend = NULL)  # creates panel 2
+addTA(signal_line, type = "l", col = "red",  on = 2)   # same panel as MACD
+addTA(macd_hist,      type = "h", col = "darkgrey", on = 2)
+
+
+## 2) Trading signals in panel 3
+addTA(signal, type = "h", col = "grey", on = NA)   # creates panel 3
+```
+
+\newpage
+
+### Statistical Comparison of Standardized Strategy Returns (Paired Hypothesis Tests)
+
+```{r metalsignal, echo=FALSE, fig.cap="Paired t-tests on standardized returns for all strategies on GC=F, SI=F and HG=F (p < 0.1). Significant positive differences are shown in orange, negative differences in blue.", out.width="95%"}
+
+# US asset names
+use_assets <-c("GC=F", "SI=F", "HG=F")
+
+# Filter once
+USE_TVALS <- ALL_TVALS_DIR[ALL_TVALS_DIR$ticker %in% use_assets, ]
+
+
+#p_bh   <- plot_p_matrix_sig_soft(US_TVALS, "BH")
+p_ma   <- plot_p_matrix_sig_soft(USE_TVALS, "MA")
+p_bb   <- plot_p_matrix_sig_soft(USE_TVALS, "BB")
+p_ag   <- plot_p_matrix_sig_soft(USE_TVALS, "AG")
+p_macd <- plot_p_matrix_sig_soft(USE_TVALS, "MACD")
+
+# Empty plot so MACD has a partner in the last row
+blank_plot <- ggplot2::ggplot() + ggplot2::theme_void()
+
+# 2 plots per row
+combined_plots <- cowplot::plot_grid(
+  p_ma,
+  p_bb,   p_ag,
+  p_macd,
+  ncol = 2,
+  align = "hv"
+)
+# # Plot all significance matrices
+final_plot <- cowplot::plot_grid(
+  combined_plots,
+  fixed_legend,
+  ncol = 1,
+  rel_heights = c(1, 0.12)
+)
+
+print(final_plot)
+
+```
+
+## Cryptocurrency
+
+```{r, echo=FALSE}
+crypto_assets <- c("BTC-USD")
+
+kable(
+  mat_sharpe[crypto_assets, ],
+  caption = "(#tab:sharpecrypto) Sharpe Ratios: Cryptocurrency (BTC-USD)",
+  format = "simple",
+  align = "l")
+```
+
+### Max Drawdowns Across Assets
+
+```{r, echo=FALSE}
+library(knitr)
+kable(mat_drawdown,
+      caption = "(\\#tab:matdrawdown) Maximum Drawdowns Across Assets",
+      format = 'simple', align = "l")
+
+```
+
+### Statistical Comparison of Strategy Returns (Paired Hypothesis Tests)
+
+## Portfolio-Level Analysis
+
+### Sharpe Ratios
+
+### Statistical Comparison of Strategy Returns (Paired Hypothesis Tests)
+
+```{r, echo = FALSE}
+plot_portfolio_matrix_sig_soft(ALL_TVALS_DIR, alpha = 0.10)
+```
+
+## Case Study Financial Crisis
+
+Crisis Sub-Sample (2008 Financial Crisis)
+
+## Summary of Findings

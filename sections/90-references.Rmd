@@ -1,0 +1,11 @@
+# References {.unnumbered}
+
+::: {#refs}
+:::
+
+\listoffigures
+
+\clearpage
+
+\listoftables
+\clearpage

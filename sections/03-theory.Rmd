@@ -1,0 +1,77 @@
+# Theoretical Background
+
+## Financial Markets and Portfolios
+
+## Trading Indicators
+
+### Moving Averages {#movingaverages}
+
+Moving averages are among the most widely used tools in technical analysis.\
+They smooth out short-term fluctuations in order to reveal the underlying trend of a time series.
+
+The *Equal-weighted Moving Average (EqMA)* is calculated as the arithmetic mean of the last $N$ observations of a time series $x_t$ [@wildislidestradingindicators]:
+
+\begin{equation}\label{eq:sma}
+MA_t(N) = \frac{1}{N} \sum_{k=0}^{N-1} x_{t-k}
+\end{equation}
+
+Each observation in the chosen window has the same weight.
+
+The *Exponential Moving Average (EMA)* assigns more weight to recent prices and is defined as [@wildislidestradingindicators]:
+
+$$EMA_t(N) =
+\frac{1}{\sum_{k=0}^{m} \alpha^k}
+\sum_{k=0}^{m} \alpha^k \, x_{t-k},  
+\quad \alpha = 1 - \frac{1}{N}$$
+
+#### Moving Average Crossings
+
+A common trading rule is based on the crossing of a short-term and a long-term moving average [@wildislidestradingindicators].\
+Let $N_1$ represent the short-term window and $N_2$ the long-term window, with $N_1 < N_2$.\
+The trading position $POS_{t+1}$ at time $t$ is defined as:
+
+\begin{equation}\label{eq:ma_crossover}
+\mathrm{POS}_{t+1} =
+\begin{cases}
+1,  & \text{if } MA_t(N_1) > MA_t(N_2) \ \text{(long)}, \\[6pt]
+-1, & \text{if } MA_t(N_1) < MA_t(N_2) \ \text{(short)}, \\[6pt]
+0,  & \text{if } MA_t(N_1) = MA_t(N_2) \ \text{(neutral)}.
+\end{cases}
+\end{equation}
+
+### Bollinger Bands
+
+*(To be completed — explain upper/lower bands and trading logic.)*
+
+### Moving Average Convergence Divergence
+
+### Momentum
+
+*(Explain momentum as rate of change or difference in price.)*
+
+## ARMA and GARCH Models {#theoryarmagarch}
+
+Conditional Mean Equation: \begin{equation}\label{eq:armamean}
+y_t = \mu
+    + \sum_{i=1}^{p} \phi_i y_{t-i}
+    + \sum_{j=1}^{q} \theta_j \varepsilon_{t-j}
+    + \varepsilon_t
+\end{equation}
+
+Conditional Variance Equation: \begin{equation}
+\label{eq:garchvariance}
+\sigma_t^2 = \omega
+           + \sum_{i=1}^{r} \alpha_i \varepsilon_{t-i}^2
+           + \sum_{j=1}^{s} \beta_j \sigma_{t-j}^2
+\end{equation} [@wildigarch]
+
+## Evaluation Criteria
+
+-   **Sharpe Ratio**
+-   **Maximum Drawdown**
+-   **Mean Squared Error (MSE)**
+
+## Hypothesis Testing
+
+Explain what a *t-test* is and how it can be applied to compare performance metrics\
+(e.g., the Sharpe ratio approximately follows a *t*-distribution under certain assumptions).

@@ -1,6 +1,6 @@
 # Appendix {.unnumbered}
 
-## A. ARMA-GARCH Strategy Function {.unnumbered #appendixA}
+## A. ARMA-GARCH Strategy Function {#appendixA .unnumbered}
 
 ::: {#exm:agfun .example}
 \label{exm:agfun} ARMA-GARCH(1,1) function in R
@@ -9,3 +9,14 @@
 
 ```
 :::
+
+### B. Max Drawdowns Across Assets {#appendixB .unnumbered}
+
+```{r, echo=FALSE}
+library(knitr)
+kable(mat_drawdown,
+      caption = "(\\#tab:matdrawdown) Maximum Drawdowns Across Assets",
+      format = 'simple', align = "l")
+```
+
+### 

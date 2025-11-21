@@ -469,7 +469,7 @@ print(final_plot)
 
 \newpage
 
-## Energy commodities
+## Energy commodities {#energy}
 
 Energy markets, such as crude oil (CL=F) and natural gas (NG=F) behave
 very differently from stock indices. Their prices are often influenced
@@ -558,16 +558,56 @@ plot(dat_ng$vola, main = "NG=F GARCH volatility estimates")
 
 ```
 
-Natural gas has very high kurtosis, meaning thereturn distribution
-contains many extreme values and heavy tails[@gasvola]. The stimated
-GARCH parameters (α = 0.065, β = 0.920, α + β ≈ 0.985) show that
-volatility shocks decay slowly. Markets with these attributes have
-strong volatility clustering, where big price shocks are followed by
-several days of high volatility. GARCH models work well in these
-environments because the high volatility is easier to predict from one
-day to the next. This helps explain why ARMA-GARCH performs so well for
-natural gas, where extreme movements are often followed by long periods
-of elevated volatility.
+Natural gas has very high kurtosis, meaning there distribution contains
+many extreme values and heavy tails[@gasvola]. The stimated GARCH
+parameters (α = 0.065, β = 0.920, α + β ≈ 0.985) show that volatility
+shocks decay slowly. Markets with these attributes have strong
+volatility clustering, where big price shocks are followed by several
+days of high volatility. GARCH models work well in these environments
+because the high volatility is easier to predict from one day to the
+next. This helps explain why ARMA-GARCH performs so well for natural
+gas, where extreme movements are often followed by long periods of
+elevated volatility.
+
+**MACD**
+
+In a pronounced downtrend, MACD can cause entries prematurely. When the
+dominant trend is negative for a longer period, even a slight slowdown
+in the rate of decline is interpreted as a positive momentum shift. This
+can cause MACD to move above the signal line and trigger a buy signal,
+even though the overall downward trend is still intact.
+
+In Figure \@ref(fig:ngmacd) natural gas experienced an extended decline
+until mid-2020, during which the rate of the downturn repeatedly slowed
+without forming a sustained reversal. Because MACD responds to changes
+in momentum rather than the direction of the price, even a brief
+reduction in the speed of the decline causes the MACD line to rise above
+the signal line.
+
+```{r ngmacd,  fig.cap="NG=F: MACD line (blue), signal line (red), histogram (dark grey), and trading signals (grey).", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE}
+
+price   <- STRATS$MACD$`NG=F`$price
+signal  <- STRATS$MACD$`NG=F`$signal
+
+macd_line   <- STRATS$MACD$`NG=F`$strategy$macd
+signal_line <- STRATS$MACD$`NG=F`$strategy$signal
+macd_hist   <- macd_line - signal_line
+
+chartSeries(price,
+            type   = "line",
+            subset = from_to,
+            theme  = chartTheme("white"),
+            name   = "NG=F Strategy")
+
+## 1) MACD indicator in panel 2
+addTA(macd_line,   type = "l", col = "blue", on = NA, legend = NULL)  # creates panel 2
+addTA(signal_line, type = "l", col = "red",  on = 2)   # same panel as MACD
+addTA(macd_hist,      type = "h", col = "darkgrey", on = 2)
+
+
+## 2) Trading signals in panel 3
+addTA(signal, type = "h", col = "grey", on = NA)   # creates panel 3
+```
 
 \newpage
 
@@ -626,10 +666,22 @@ The metals group, consists of gold (GC=F), silver (SI=F), and copper
 (HG=F) these assets are widely know as safe havens. Because these
 markets differ strongly in volatility patterns and trend behaviour, the
 strategies are expected to perform differently across the three
-contracts. \### Sharpe Ratios Table @ref(tab:sharpemetals) shows that
-the ARMA-GARCH strategy achieves the highest Sharpe ratio concistently
-across all three metals, outperforming ever the Buy and Hold. The
-results of the other methods vary between the metals.
+contracts.
+
+### Sharpe Ratios
+
+Table @ref(tab:sharpemetal) shows that the ARMA-GARCH strategy achieves
+the highest Sharpe ratio concistently across all three metals,
+outperforming ever the Buy and Hold. At this point of the analysis, a
+tendency can be observed, commodities increasingly favour the ARMA–GARCH
+strategy. Outperforming a Buy and Hold strategy is an achievement in
+itself, and it occurs in many cases.
+
+The results across the metals show a consistent pattern at the top and a
+mixed pattern among the remaining strategies. MA and MACD alternate
+between middle and lower positions depending on the metal, without a
+consistent ranking across the set. Bollinger Bands shows the weakest
+performance, typically placing fourth or fifth in every case.
 
 ```{r sharpemetal, echo=FALSE, results='asis'}
 metal_assets <- c("GC=F", "SI=F", "HG=F")
@@ -644,43 +696,45 @@ kable(
 **ARMA-GARCH**
 
 Figure @ref(fig:agGC) shows the cumulative returns of the ARMA-GARCH
-compared to the Buy and Hold strategy for gold. The strategy delivers a
-noticeably smoother return path. In the long periods of relatively low
-and stable volatility that follow. While Buy and Hold benefits from
-gold’s overall upward trend, ARMA-GARCH has a more controlled return
-profile with more stable growth.
+compared to the Buy and Hold strategy for gold. The strategy has a
+smoother return path, in the long periods of lower volatility that
+follow. While Buy and Hold benefits from gold’s overall upward trend,
+ARMA-GARCH has a more controlled return profile with more stable growth.
+This results in the ARMA-GARCH returns being slightly higher at the end
+of the sample period and a higher Sharpe ratio due to the reduced risk.
 
-```{r agGC, echo=FALSE, fig.cap="GC=F: ARMA-GARCH vs Buy-and-Hold", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE}
+```{r agGC, echo=FALSE, fig.cap="GC=F: ARMA-GARCH vs Buy and Hold", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE, fig.height=5}
+
 dat_ng <- strat_ag_arma_garch(
   price        = px_list$`GC=F`$`GC=F.Adjusted`,
   model        = "arma(1,0) + garch(1,1)",
   return_strat = TRUE
 )
 
-par(mar = c(4, 4, 2, 2), mfrow = c(3, 1))
+par(mar = c(5, 4, 2, 2), mfrow = c(3, 1))
 
 cum_ag <- exp(cumsum(na.omit(BACKT$AG$`GC=F`))) - 1
 cum_bh <- exp(cumsum(na.omit(BACKT$BH$`GC=F`[index(BACKT$AG$`GC=F`)]))) - 1
 
 plot(cum_bh, lwd=2,
-     main="GC=F: Cumulative Returns (BH)",
-     ylab="Cumulative return", xlab="Time")
+     main="GC=F: Cumulative Returns (BH)", xlab="Time")
 plot(cum_ag, lwd=2,
-     main="GC=F: Cumulative Returns (AG)",
-     ylab="Cumulative return", xlab="Time")
+     main="GC=F: Cumulative Returns (AG)", xlab="Time")
 
 plot(dat_ng$vola, main = "GC=F GARCH volatility estimates")
 ```
 
-Silver shows a smooth development over the sample period and the
-ARMA-GARCH strategy ends at about the same cumulative return level as
-Buy and Hold. The main difference is fewer fluctuations. The only
-notable setback occurs during the volatility spike in early 2020, where
-the drawdown is similar to Buy and Hold. Apart from that period, the
-performance remains stable and free of major swings. The volatility of
-silver is higher than gold and the clusters tend to last longer.
+During the sample period the silver price is more volatile than the gold
+price. The ARMA-GARCH strategy ends at about the same cumulative return
+level as Buy and Hold. The main difference is fewer fluctuations. The
+only notable setback occurs during the crash in early 2020, where the
+drawdown is similar to Buy and Hold. Upon closer examination the
+volatility spike that accompanies this crash occurs only after the
+sudden drop. As a result, the model does not reduce its exposure in
+advance, which explains the similar drawdown during this episode. These
+effects are visualized in the following Figure \@ref(fig:agSI).
 
-```{r agSI, echo=FALSE, fig.cap="SI=F: ARMA-GARCH vs Buy-and-Hold", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE}
+```{r agSI, echo=FALSE, fig.cap="SI=F: ARMA-GARCH vs Buy and Hold", out.width="70%", fig.keep="last", message=FALSE, warning = FALSE}
 
 dat_ng <- strat_ag_arma_garch(
   price        = px_list$`SI=F`$`SI=F.Adjusted`,
@@ -688,22 +742,32 @@ dat_ng <- strat_ag_arma_garch(
   return_strat = TRUE
 )
 
-par(mar = c(4, 4, 2, 2), mfrow = c(3, 1))
+par(mar = c(5, 4, 2, 2), mfrow = c(3, 1))
 
 cum_ag <- exp(cumsum(na.omit(BACKT$AG$`SI=F`))) - 1
 cum_bh <- exp(cumsum(na.omit(BACKT$BH$`SI=F`[index(BACKT$AG$`SI=F`)]))) - 1
 
 plot(cum_bh, lwd=2,
-     main="SI=F: Cumulative Returns (BH)",
-     ylab="Cumulative return", xlab="Time")
+     main="SI=F: Cumulative Returns (BH)", xlab="Time")
 plot(cum_ag, lwd=2,
-     main="SI=F: Cumulative Returns (AG)",
-     ylab="Cumulative return", xlab="Time")
+     main="SI=F: Cumulative Returns (AG)", xlab="Time")
 
-plot(dat_ng$vola, main = "SI=F GARCH volatility estimates")
+plot(dat_ng$vola, main = "SI=F: GARCH volatility estimates")
 ```
 
-```{r agHG, echo=FALSE, fig.cap="HG=F: ARMA-GARCH vs Buy-and-Hold", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE}
+The next Figure \@ref(fig:agHG) shows the results for the final metal in
+this group, copper. As before, the plots compare cumulative returns for
+Buy and Hold and the ARMA-GARCH strategy, followed by the corresponding
+GARCH volatility estimates.
+
+What is more noticeable is the stronger volatility clustering in copper
+returns compared to the other metals. The final level during the sample
+period is similar. Visually, the ARMA-GARCH return path does not appear
+smoother than the underlying. The difference lies in the volatility of
+the returns. For silver, the volatility of the Buy and Hold cumulative
+returns is higher at 0.048 compared to 0.012 for the ARMA-GARCH returns.
+
+```{r agHG, echo=FALSE, fig.cap="HG=F: ARMA-GARCH vs Buy and Hold", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE}
 
 dat_ng <- strat_ag_arma_garch(
   price        = px_list$`HG=F`$`HG=F.Adjusted`,
@@ -711,81 +775,62 @@ dat_ng <- strat_ag_arma_garch(
   return_strat = TRUE
 )
 
-par(mar = c(4, 4, 2, 2), mfrow = c(3, 1))
+par(mar = c(5, 4, 4, 2), mfrow = c(3, 1))
 
 cum_ag <- exp(cumsum(na.omit(BACKT$AG$`HG=F`))) - 1
 cum_bh <- exp(cumsum(na.omit(BACKT$BH$`HG=F`[index(BACKT$AG$`HG=F`)]))) - 1
 
 plot(cum_bh, lwd=2,
-     main="HG=F: Cumulative Returns (BH)",
-     ylab="Cumulative return", xlab="Time")
+     main="HG=F: Cumulative Returns (BH)", xlab="Time")
 plot(cum_ag, lwd=2,
-     main="HG=F: Cumulative Returns (AG)",
-     ylab="Cumulative return", xlab="Time")
+     main="HG=F: Cumulative Returns (AG)", xlab="Time")
 
 plot(dat_ng$vola, main = "HG=F GARCH volatility estimates")
 ```
 
-```{r}
-mavg <- STRATS$BB$`HG=F`$strategy$mavg
-up <- STRATS$BB$`HG=F`$strategy$up
-dn <- STRATS$BB$`HG=F`$strategy$dn
-signal <- STRATS$BB$`HG=F`$signal
-#from_to<-"2019-06-01::2021-12-30"
+**MACD**
 
-chartSeries(STRATS$BB$`HG=F`$price,
-            type = "line",
-            #subset = from_to,
-            theme=chartTheme("white"), name = "HG=F BB Strategy")
+The MACD strategy shows a mixed performance across the metals. For gold
+it ranks at the bottom of the group, for silver and copper, the strategy
+performs considerably better.
 
-addTA(mavg,type="S",col="blue", on = 1)
-addTA(up,type="S",col="darkgrey", on = 1, lty = 2)
-addTA(dn,type="S",col="darkgrey", on = 1, lty = 2)
-addTA(signal,col="grey", type = "h")
-```
+This is because MACD responds to the rate of change of the price, so it
+can generate exits whenever momentum weakens, regardless of whether the
+underlying trend is upward or downward.
 
-```{r}
-par(mar = c(5, 4, 4, 2) + 1)
-dat <- px_list$`GC=F`$`GC=F.Adjusted`
-SMA_N1 <- STRATS$MA$`GC=F`$strategy$`SMA short`
-SMA_N2 <- STRATS$MA$`GC=F`$strategy$`SMA long`
-signal <- STRATS$MA$`GC=F`$signal
+For assets with strong and persistent directional movements, this
+behaviour can lead to premature signals. When the pace of an uptrend
+slows, MACD often crosses below the signal line, indicating a loss of
+momentum even though the prevailing trend remains intact. In such cases,
+the strategy exits the market. The oposite effect was observed for the
+energy commodity natural gas during a downward trend in the Section
+\@ref(energy).
 
-chartSeries(dat, name = "SSMI MA Strategy",
-            type = "line",
-            subset=date_from_to,
-            theme=chartTheme("white"))
-addTA(SMA_N1,col="red", on = 1)
-addTA(SMA_N2,col="blue", on = 1)
-addTA(signal,col="grey")
-```
+Gold shows this phenomenon clearly. Its price often moves in long,
+stable phases with periods in which momentum eases without the price
+direction changing. A specific example occurs in May 2020 (Figure
+\@ref(fig:gcmacd): after the rapid recovery in March and April, the
+price continues to rise but at a slower pace. MACD interprets this
+slowdown as changing momentum and turns negative, leading the strategy
+to exit the market while the price is still trending upward. Similar
+momentum deceleration phases appear throughout the gold sample, which
+contributes to MACD’s weak performance on this asset.
 
-```{r mettrend, echo=FALSE, fig.cap="Price and Log-Returns of the SSMI (2019-2024)", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE, results='hide'}
-
-
-# --- SSMI ---------------------------------------------------------
-
-par(mfrow = c(2,1))
-plot(STRATS$BH$SSMI$price, main = "SSMI Price")
-plot(diff(log(STRATS$BH$SSMI$price)), main = "SSMI log-Returns")
-
-```
-
-```{r}
+```{r gcmacd, echo = FALSE, fig.cap="HG=F: MACD line (blue), signal line (red), histogram (dark grey), and trading signals (grey).", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE}
 from_to <- "2019-11-01::2020-11-01"
 
-price   <- STRATS$MACD$`GC=F`$price
-signal  <- STRATS$MACD$`GC=F`$signal
+price   <- STRATS$MACD$`HG=F`$price
+signal  <- STRATS$MACD$`HG=F`$signal
 
-macd_line   <- STRATS$MACD$`GC=F`$strategy$macd
-signal_line <- STRATS$MACD$`GC=F`$strategy$signal
+macd_line   <- STRATS$MACD$`HG=F`$strategy$macd
+signal_line <- STRATS$MACD$`HG=F`$strategy$signal
 macd_hist   <- macd_line - signal_line
 
 chartSeries(price,
             type   = "line",
             subset = from_to,
             theme  = chartTheme("white"),
-            name   = "GDAXI MACD Strategy")
+            name   = "SI=F Strategy")
 
 ## 1) MACD indicator in panel 2
 addTA(macd_line,   type = "l", col = "blue", on = NA, legend = NULL)  # creates panel 2
@@ -796,6 +841,15 @@ addTA(macd_hist,      type = "h", col = "darkgrey", on = 2)
 ## 2) Trading signals in panel 3
 addTA(signal, type = "h", col = "grey", on = NA)   # creates panel 3
 ```
+
+This issue does not necessarily arise for every asset with a strong
+medium to long-term trend, but it can when momentum shifts do not align
+with the direction of the trend, as seen in the example of gold. In
+contrast, silver and copper have less persistent trend behaviour. Their
+momentum changes are more closely linked to actual movements in price
+direction. As a result, MACD signals in silver and copper tend to
+reflect genuine turning points more often, while in gold they are
+triggered simply by a slowing of an otherwise intact trend.
 
 \newpage
 
@@ -839,29 +893,70 @@ print(final_plot)
 
 ```
 
+\newpage
+
 ## Cryptocurrency
+
+Cryptocurrencies behave fundamentally differently from equities and
+commodities. Bitcoin shows extremely high volatility and is mostl driven
+by speculation rather than by macroeconomic trends. With these
+characteristics in mind, the following section evaluates how the five
+strategies perform on Bitcoin.
+
+### Sharpe Ratios
 
 ```{r, echo=FALSE}
 crypto_assets <- c("BTC-USD")
 
+df <- t(mat_sharpe[crypto_assets, , drop = FALSE])
+df <- as.data.frame(t(df))   # re-row it
+
 kable(
-  mat_sharpe[crypto_assets, ],
+  df,
   caption = "(#tab:sharpecrypto) Sharpe Ratios: Cryptocurrency (BTC-USD)",
   format = "simple",
-  align = "l")
-```
-
-### Max Drawdowns Across Assets
-
-```{r, echo=FALSE}
-library(knitr)
-kable(mat_drawdown,
-      caption = "(\\#tab:matdrawdown) Maximum Drawdowns Across Assets",
-      format = 'simple', align = "l")
-
+  align = "l"
+)
 ```
 
 ### Statistical Comparison of Strategy Returns (Paired Hypothesis Tests)
+
+```{r cryprosignif, echo=FALSE, fig.cap="Paired t-tests on standardized returns for all strategies on BTC-USD (p < 0.1). Significant positive differences are shown in orange, negative differences in blue.", out.width="95%"}
+
+# US asset names
+use_assets <-c("BTC-USD")
+
+# Filter once
+USE_TVALS <- ALL_TVALS_DIR[ALL_TVALS_DIR$ticker %in% use_assets, ]
+
+
+#p_bh   <- plot_p_matrix_sig_soft(US_TVALS, "BH")
+p_ma   <- plot_p_matrix_sig_soft(USE_TVALS, "MA")
+p_bb   <- plot_p_matrix_sig_soft(USE_TVALS, "BB")
+p_ag   <- plot_p_matrix_sig_soft(USE_TVALS, "AG")
+p_macd <- plot_p_matrix_sig_soft(USE_TVALS, "MACD")
+
+# Empty plot so MACD has a partner in the last row
+blank_plot <- ggplot2::ggplot() + ggplot2::theme_void()
+
+# 2 plots per row
+combined_plots <- cowplot::plot_grid(
+  p_ma,
+  p_bb,   p_ag,
+  p_macd,
+  ncol = 2,
+  align = "hv"
+)
+# # Plot all significance matrices
+final_plot <- cowplot::plot_grid(
+  combined_plots,
+  fixed_legend,
+  ncol = 1,
+  rel_heights = c(1, 0.12)
+)
+
+print(final_plot)
+```
 
 ## Portfolio-Level Analysis
 
@@ -873,8 +968,36 @@ kable(mat_drawdown,
 plot_portfolio_matrix_sig_soft(ALL_TVALS_DIR, alpha = 0.10)
 ```
 
+```{r agBTC, echo=FALSE, fig.cap="GC=F: ARMA-GARCH vs Buy and Hold", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE, fig.height=5}
+
+dat_ng <- strat_ag_arma_garch(
+  price        = px_list$`BTC-USD`$`BTC-USD.Adjusted`,
+  model        = "arma(1,0) + garch(1,1)",
+  return_strat = TRUE
+)
+
+par(mar = c(5, 4, 2, 2), mfrow = c(3, 1))
+
+cum_ag <- exp(cumsum(na.omit(BACKT$AG$`BTC-USD`))) - 1
+cum_bh <- exp(cumsum(na.omit(BACKT$BH$`BTC-USD`[index(BACKT$AG$`BTC-USD`)]))) - 1
+
+plot(cum_bh, lwd=2,
+     main="GC=F: Cumulative Returns (BH)", xlab="Time")
+plot(cum_ag, lwd=2,
+     main="GC=F: Cumulative Returns (AG)", xlab="Time")
+
+plot(dat_ng$vola, main = "GC=F GARCH volatility estimates")
+```
+
 ## Case Study Financial Crisis
 
 Crisis Sub-Sample (2008 Financial Crisis)
 
 ## Summary of Findings
+
+crypto
+
+As a result, classical indicators such as Moving Averages or Bollinger
+Bands, which rely on smoother trend structures, tend to react
+inconsistently. In contrast, volatility-adaptive methods may benefit
+from the strong volatility clustering typical for crypto markets.

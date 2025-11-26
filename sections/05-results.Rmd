@@ -6,12 +6,32 @@ editor_options:
 
 # Results
 
-Overview of the Evaluation Framework
+The main analysis evaluates the performance of all trading strategies
+over the period 2014-2024.\
+This window is selected because 2024 is the last complete year before
+this paper and 2014 was chosen because it it the earliest date each of
+the time series start.
 
-## US Equity indices
+Each iteration of the tuning uses five years of training data followed
+by one year of out-of-sample testing.\
+Given that the dataset begins in 2014, the first five years of the
+sample (2014–2018) form the initial training window.\
+The first actual test year is therefore 2019, after which the window
+shifts forward by one year at a time until the end of 2024.
+
+This implies that the strategies are evaluated out-of-sample for the
+years 2019–2024, while the period 2014-2018 serves exclusively to
+initialise and estimate the optimal parameters.
+
+All assets (equity indices, commodities, and Bitcoin) are included in
+this main analysis.
+
+The implementation in R can be found in the Appendix \@ref(appendixD).
+
+## U.S. Equity indices
 
 US Assets exhibit a stronger upward drift during the evaluation period
-than other indices, which is typical for US assets due to inflation, it
+than other indices, which is typical for U.S. assets due to inflation, it
 is also worth noting that the currency of these assets is USD. The
 performance patterns are consistent across both U.S. indices, with the
 same strategies outperforming and underperforming this creates a clear
@@ -20,7 +40,7 @@ picture.
 ### Sharpe Ratios {#ussharpe}
 
 Table \@ref(tab:sharpeus) shows the Sharpe ratios of all strategies
-applied to the US equity indices (GSPC = S&P 500 and IXIC = NASDAQ).
+applied to the U.S. equity indices (GSPC = S&P 500 and IXIC = NASDAQ).
 
 ```{r sharpeus, echo=FALSE, results='asis'}
 library(knitr)
@@ -29,16 +49,15 @@ us_assets <- c("GSPC", "IXIC")
 
 kable(
   mat_sharpe[us_assets, ],
-  caption = "(#tab:sharpeus) Sharpe Ratios: US Markets (2019-2024)",
+  caption = "(#tab:sharpeus) Sharpe Ratios: U.S. Markets (2019-2024)",
   format = "simple",
   align = "l"
 )
 
 ```
 
-The volatility adjusted ARMA-GARCH trading strategy performed best
-(1.13-1.15), even compared to the Buy and Hold benchmark (0.77-0.79).
-The MCAD strategy also performs well (0.64–0.91). Simple Moving Averages
+The volatility adjusted ARMA-GARCH trading strategy performed best, even compared to the Buy and Hold benchmark.
+The MCAD strategy also performs well. Simple Moving Averages
 don't stand out positively or negatively in this scenario. The Bollinger
 Bands strategy yields negative Sharpe ratios for both US indices.
 
@@ -136,8 +155,8 @@ chartSeries(STRATS$BB$IXIC$price,
             subset = from_to,
             theme=chartTheme("white"), name = "IXIC BB Strategy")
 addTA(mavg,type="S",col="blue", on = 1)
-addTA(up,type="S",col="darkgrey", on = 1, lty = 2)
-addTA(dn,type="S",col="darkgrey", on = 1, lty = 2)
+addTA(up,type="S",col="darkgrey", on = 1, lty = 2, lwd = 2)
+addTA(dn,type="S",col="darkgrey", on = 1, lty = 2, lwd = 2)
 addTA(signal,col="grey", type = "h")
 
 ```
@@ -160,16 +179,19 @@ chartSeries(STRATS$BB$IXIC$price,
             subset = from_to,
             theme=chartTheme("white"), name = "IXIC BB Strategy")
 addTA(mavg,type="S",col="blue", on = 1)
-addTA(up,type="S",col="darkgrey", on = 1, lty = 2)
-addTA(dn,type="S",col="darkgrey", on = 1, lty = 2)
+addTA(up,type="S",col="darkgrey", on = 1, lty = 2, lwd = 2)
+addTA(dn,type="S",col="darkgrey", on = 1, lty = 2, lwd = 2)
 addTA(signal,col="grey", type = "h")
 
 ```
 
 Similar patterns as those observed for the IXIC also appear for the
 GSPC. This suggests that the Bollinger Bands strategy struggles in
-high-inflation environments \newpage \### Statistical Comparison of
-Standardized Strategy Returns (Paired Hypothesis Tests)
+high-inflation environments
+
+\newpage
+
+### Statistical Comparison of Standardized Strategy Returns (Paired Hypothesis Tests)
 
 To evaluate whether performance differences between strategies are
 statistically meaningful, paired t-tests are applied to the standardized
@@ -242,39 +264,44 @@ should be viewed with caution.
 ## European Equity indices
 
 This section examines two European equity indices, which show a steadier
-and less pronounced upward trend than the US market, shaping the
-performance of the strategies applied. \### Sharpe Ratios
+and less pronounced upward trend than the U.S. market, shaping the
+performance of the strategies applied.
+
+### Sharpe Ratios
 
 Table \@ref(tab:sharpeeu) shows the Sharpe ratios for the European
 equity indices (SSMI = Swiss Market Index and GDAXI = DAX
-Perfomance-Index). Compared to the US indices, both markets exhibit
-noticeably weaker performance during 2019–2024 in their naitive
-currencies.
+Performance-Index). Compared to the US indices, both markets exhibit
+noticeably weaker performance during 2019-2024 in their native
+currencies. 
+
+Despite structural differences between European and U.S. markets, the equity indices across both regions show a similar pattern in terms of which strategies perform well and which under perform.
 
 ```{r sharpeeu, echo=FALSE, results='asis'}
 use_assets <- c("SSMI", "GDAXI")
 
 kable(
   mat_sharpe[use_assets, ],
-  caption = "(#tab:sharpeeu) Sharpe Ratios: European Markets",
+  caption = "(#tab:sharpeeu) Sharpe Ratios: European Markets (2019-2024)",
   format = "simple",
   align = "l")
 ```
 
 The SSMI shows the lowest Sharpe ratios among all equity indices. A
 central reason is Switzerland’s persistently low inflation and strong
-CHF, which leads to weaker trend behaviour. As a result MA and BB
+CHF, which leads to weaker trend behavior. As a result MA and BB
 perform poorly.
 
 The ARMA-GARCH strategy outperforms Buy and Hold for both European
 assets, but not as noticeably as the MCAD strategy. Overall, the
 performance patterns consistent across both European indices, with the
-same strategies outperforming and underperforming.
+same strategies outperforming and under performing.
+
 
 **MACD**
 
 Figure \@ref(fig:eumacd) shows that both the Buy and Hold and the MACD
-strategy reach a similar cumulative return on the GDAX Iover the
+strategy reach a similar cumulative return on the GDAX over the
 evaluation period. The reason the MACD strategy follows a smoother path
 achieving a higher Sharpe ratio. A sharp downturn can be seen in the Buy
 and Hold returns in 2020. The MACD strategy smooths that period to a
@@ -396,8 +423,8 @@ chartSeries(STRATS$BB$GDAXI$price,
             theme=chartTheme("white"), name = "GDAXI BB Strategy")
 zoomChart(from_to)
 addTA(mavg,type="S",col="blue", on = 1)
-addTA(up,type="S",col="darkgrey", on = 1, lty = 2)
-addTA(dn,type="S",col="darkgrey", on = 1, lty = 2)
+addTA(up,type="S",col="darkgrey", on = 1, lty = 2, lwd = 2)
+addTA(dn,type="S",col="darkgrey", on = 1, lty = 2, lwd = 2)
 addTA(signal,col="grey", type = "h")
 ```
 
@@ -405,7 +432,7 @@ addTA(signal,col="grey", type = "h")
 
 ### Statistical Comparison of Standardized Strategy Returns (Paired Hypothesis Tests)
 
-Figure @ref(fig:eusignal) summarises the paired t-tests on
+Figure \@ref(fig:eusignal) summarizes the paired t-tests on
 time-dependent variance-standardized returns for the two European
 indices. Most patterns observed in the Sharpe ratios for European
 markets are shown to be non-significant. Overall, only very few
@@ -482,8 +509,7 @@ well different trading strategies perform.
 ### Sharpe Ratios
 
 Table \@ref(tab:sharpeenergy) shows the Sharpe ratios for crude oil and
-natural gas. Both markets perform very poorly across almost all trading
-strategies. The strategies that perform relatively better, as well as
+natural gas. The strategies that perform relatively better, as well as
 those that perform worse, differ between the two assets and do not
 provide a consistent pattern for the energy category. This suggests that
 crude oil and natural gas behave fundamentally differently and cannot be
@@ -494,27 +520,17 @@ energy_assets <- c("CL=F", "NG=F")
 
 kable(
   mat_sharpe[energy_assets, ],
-  caption = "(#tab:sharpeenergy) Sharpe Ratios: Energy Commodities",
+  caption = "(#tab:sharpeenergy) Sharpe Ratios: Energy Commodities (2019-2024)",
   format = "simple",
   align = "l")
 ```
 
-For crude oil, the only positive Sharpe ratio appears under
-Buy-and-Hold, while all active strategies perform worse. Crude Oil did
-not exhibit persistent trends or exploitable momentum during the sample
-period, making slow-moving or threshold-based rules ineffective. The
-price series even contains negative prices, reflecting the extraordinary
-market conditions during the 2020 oil market collapse, when storage
-costs surged and producers were effectively paying buyers to take
-delivery[@NegativeOilPrices]. The lack of trends can is visualized in
-the following figure \@ref(fig:clfprice).
-
-```{r clfprice, echo=FALSE, fig.cap="Price and Log-Returns of the CL=F (2019-2024)", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE, results='hide'}
-
-par(mfrow = c(2,1))
-plot(STRATS$BH$`CL=F`$price["2019-01-01::2024-12-30"], main = "CL=F Price")
-plot(diff(log(STRATS$BH$`CL=F`$price["2019-01-01::2024-12-30"])), main = "CL=F Price")
-```
+For crude oil, the only positive Sharpe ratio appears under Buy and
+Hold, while all active strategies perform worse. The Crude Oil price
+series contains negative prices, reflecting the extraordinary market
+conditions during the 2020 oil market collapse, when storage costs
+surged and producers were effectively paying buyers to take
+delivery[@NegativeOilPrices].
 
 Natural gas, shows a negative Sharpe ratio under Buy and Hold and weak
 performance across almost all strategies. ARMA-GARCH shows the highest
@@ -522,9 +538,11 @@ Sharpe ratio, this improvement is driven mainly by reducing exposure
 during high volatility during the downturn at the end of the sample
 period.
 
+\newpage
+
 **ARMA-GARCH**
 
-Figure @ref(fig:agngf) shows the cumulative returns of the ARMA-GARCH
+Figure \@ref(fig:agngf) shows the cumulative returns of the ARMA-GARCH
 strategy compared to Buy and Hold for NG=F. The ARMA-GARCH curve rises
 smoothly and steadily even though the underlying price is extremely
 volatile. The strategy performs exceptionally well on natural gas
@@ -584,7 +602,7 @@ in momentum rather than the direction of the price, even a brief
 reduction in the speed of the decline causes the MACD line to rise above
 the signal line.
 
-```{r ngmacd,  fig.cap="NG=F: MACD line (blue), signal line (red), histogram (dark grey), and trading signals (grey).", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE}
+```{r ngmacd,  echo = FALSE, fig.cap="NG=F: MACD line (blue), signal line (red), histogram (dark grey), and trading signals (grey).", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE}
 
 price   <- STRATS$MACD$`NG=F`$price
 signal  <- STRATS$MACD$`NG=F`$signal
@@ -613,7 +631,7 @@ addTA(signal, type = "h", col = "grey", on = NA)   # creates panel 3
 
 ### Statistical Comparison of Standardized Strategy Returns (Paired Hypothesis Tests)
 
-Figure @ref(fig:energysignal) summarises the paired t-tests on
+Figure \@ref(fig:energysignal) summarises the paired t-tests on
 conditional variance-standardized returns for crude oil (CL=F) and
 natural gas (NG=F). The differences between the trading methods are all
 non significant. This is a typical for many financial time series. The
@@ -670,7 +688,7 @@ contracts.
 
 ### Sharpe Ratios
 
-Table @ref(tab:sharpemetal) shows that the ARMA-GARCH strategy achieves
+Table \@ref(tab:sharpemetal) shows that the ARMA-GARCH strategy achieves
 the highest Sharpe ratio concistently across all three metals,
 outperforming ever the Buy and Hold. At this point of the analysis, a
 tendency can be observed, commodities increasingly favour the ARMA–GARCH
@@ -688,14 +706,16 @@ metal_assets <- c("GC=F", "SI=F", "HG=F")
 
 kable(
   mat_sharpe[metal_assets, ],
-  caption = "(#tab:sharpemetals) Sharpe Ratios: Metals",
+  caption = "(#tab:sharpemetals) Sharpe Ratios: Metals (2019-2024)",
   format = "simple",
   align = "l")
 ```
 
+\newpage
+
 **ARMA-GARCH**
 
-Figure @ref(fig:agGC) shows the cumulative returns of the ARMA-GARCH
+Figure \@ref(fig:agGC) shows the cumulative returns of the ARMA-GARCH
 compared to the Buy and Hold strategy for gold. The strategy has a
 smoother return path, in the long periods of lower volatility that
 follow. While Buy and Hold benefits from gold’s overall upward trend,
@@ -788,6 +808,8 @@ plot(cum_ag, lwd=2,
 plot(dat_ng$vola, main = "HG=F GARCH volatility estimates")
 ```
 
+\newpage
+
 **MACD**
 
 The MACD strategy shows a mixed performance across the metals. For gold
@@ -854,6 +876,7 @@ triggered simply by a slowing of an otherwise intact trend.
 \newpage
 
 ### Statistical Comparison of Standardized Strategy Returns (Paired Hypothesis Tests)
+The only significant effects are for Silver, the ARMA-GARCH trading method produces significantly larger standardized returns than both Bolliner Bands and Moving Average strategies (Figure \@ref(fig:metalsignal)). 
 
 ```{r metalsignal, echo=FALSE, fig.cap="Paired t-tests on standardized returns for all strategies on GC=F, SI=F and HG=F (p < 0.1). Significant positive differences are shown in orange, negative differences in blue.", out.width="95%"}
 
@@ -903,23 +926,162 @@ by speculation rather than by macroeconomic trends. With these
 characteristics in mind, the following section evaluates how the five
 strategies perform on Bitcoin.
 
+Bitcoin is highly correlated with most other major cryptocurrencies, so
+analysing Bitcoin alone is still representative for the broader crypto
+market, which often moves in line with it.
+
+Another characteristic is that technically important news, such as
+protocol updates or network improvements, often has little or no effect
+on prices, while general market reactions tend to dominate price
+movements. These reactions can be triggered by things like comments from
+influential people, exchange announcements, or sudden shifts in trading
+activity rather than by technical fundamentals.
+
 ### Sharpe Ratios
 
-```{r, echo=FALSE}
+The Sharpe ratios in the following Figure \@ref(fig:sharpecrypto) show a
+different image than assets discussed in previous sections. The the
+trading filters Bollinger Band and Moving average Convergence /
+Divergence outperforms the Buy and Hold. The Bollinger Band strategy
+specifically has not outperformed the underlying for previous
+strategies. This would be in line with statements made in a study by
+Marshall, Cahan and Cahan, that technical indicators have a bigger
+effect in emerging markets [@marshall2010technical].
+
+```{r sharpecrypto, echo=FALSE, results='asis'}
 crypto_assets <- c("BTC-USD")
 
 df <- t(mat_sharpe[crypto_assets, , drop = FALSE])
-df <- as.data.frame(t(df))   # re-row it
+df <- as.data.frame(t(df))  
 
 kable(
   df,
-  caption = "(#tab:sharpecrypto) Sharpe Ratios: Cryptocurrency (BTC-USD)",
+  caption = "(#tab:sharpecrypto) Sharpe Ratios: Cryptocurrency (2019-2024)",
   format = "simple",
   align = "l"
 )
 ```
 
+The MACD once again performed will in a market subject to frequent and
+sudden change whereas the Moving Average strategy does not perform well
+under these conditions.
+
+\newpage
+
+**Bollinger Bands**
+
+A previously observed weakens of the Bollinger Band strategy was that
+upwards trends were missed at times because the strategy requires strong
+breakouts to cross the upper band and trigger a buy signal. These trends
+were missed because upwards trends are often more subtle and dont stray
+as violently from the moving average. This caused late market entries.
+Similarly it has been observed in markets discussed earlier, that when
+the market experiences a drawdown the variance becomes large this delays
+the crossing of the lower band as the price has to fall more. This
+causes late exits. The sharpe ratio and Figure \@ref(fig:BTCbb) below
+confirm, that the strategy does not lag for this asset during the period
+observed as observed in past markets.
+
+```{r BTCbb, echo=FALSE, fig.cap="IXIC Bollinger Bands strategy during the 2022–2023 downswing", out.width="65%", fig.keep="last", message=FALSE, warning=FALSE, results='hide'}
+
+mavg <- STRATS$BB$`BTC-USD`$strategy$mavg
+up <- STRATS$BB$`BTC-USD`$strategy$up
+dn <- STRATS$BB$`BTC-USD`$strategy$dn
+signal <- STRATS$BB$`BTC-USD`$signal
+from_to<-"2021-01-01::2024-12-30"
+
+chartSeries(STRATS$BB$`BTC-USD`$price,
+            type = "line",
+            subset = from_to,
+            theme=chartTheme("white"), name = "IXIC BB Strategy")
+addTA(mavg,type="S",col="blue", on = 1)
+addTA(up,type="S",col="darkgrey", on = 1, lty = 2, lwd = 2)
+addTA(dn,type="S",col="darkgrey", on = 1, lty = 2, lwd = 2)
+addTA(signal,col="grey", type = "h")
+```
+
+A possible explanation for the behaviour of the Bollinger Bands strategy
+is that Bitcoin’s conditional volatility $\sigma_{t}$ is not strongly
+driven by negative returns, unlike in traditional equity markets.
+Volatility could possibly react similarly to positive and negative
+returns, or in some periods even slightly more to positive returns. This
+results in a more symmetric, or eve inverted volatility-return
+relationship. In this case, $\sigma_t$ would not spike more during
+downturns, preventing delayed exits, while elevated volatility during
+upward movements allows earlier breakout signals.
+
+This interpretation is consistent with the literature. Takaishi (2021)
+documents weak or inverted volatility asymmetry in Bitcoin, showing that
+volatility does not increase predominantly after negative returns as it
+does in equity markets [@takaishi2021time].
+
+To examine this empirically, the one-step-ahead GARCH volatility
+forecast $\hat{\sigma}_{t+1}$ was compared conditional on the sign of
+the previous day’s return $r_t$:
+
+$$
+\bar{\sigma}^{(-)} = \mathbb{E}[\hat{\sigma}_{t+1} \mid r_t < 0]; 
+\qquad
+\bar{\sigma}^{(+)} = \mathbb{E}[\hat{\sigma}_{t+1} \mid r_t > 0]
+$$
+
+The classic effect would be $\bar{\sigma}^{(-)} > \bar{\sigma}^{(+)}$.
+For Bitcoin, however, the empirical results show:
+
+$$
+\bar{\sigma}^{(-)} \approx 0.0443; \qquad 
+\bar{\sigma}^{(+)} \approx 0.0452
+$$
+
+```{r, echo=FALSE}
+## Align BH returns with GARCH vol series --------------------------
+
+# 1) Use BH returns, restricted to the dates where vola exists
+ret_btc <- dat_ng$return
+vol_btc <- dat_ng$vola
+
+# 2) Lag returns and volatility:
+r_lag      <- lag(ret_btc)[-1]                #r_t
+vol_btc <- dat_ng$vola[-length(dat_ng$vola)]  #sigma_t+1
+
+
+r_lag        <- as.numeric(r_lag)
+vol_btc    <- as.numeric(vol_btc)
+
+
+
+# 3) Simple asymmetry check -------------------------
+
+vol_after_neg <- mean(vol_btc[r_lag < 0])
+vol_after_pos <- mean(vol_btc[r_lag > 0])
+
+vol_after_neg
+vol_after_pos
+
+
+```
+
+meaning that next day volatility is slightly higher after positive
+returns. Although the difference is small, its direction supports the
+view that Bitcoin’s volatility-return link is either symmetric or
+slightly inverted. This is a possible explanation for the favorable
+behavior observed in the Bollinger Bands strategy on cryptocurrencies.
+
+\newpage
+
+**ARMA GARCH**
+
+The weak volatility asymmetry discussed above also helps explain the
+under performance of the ARMA-GARCH strategy on Bitcoin. Since
+$\sigma_t$ does not rise after negative returns, but reacts in a more
+symmetric way to both upward and downward price movements, the strategy
+reduces its position not only during declines but also during strong
+upward movements, leading to missed gains and weaker performance.
+
 ### Statistical Comparison of Strategy Returns (Paired Hypothesis Tests)
+
+None of the paired tests for Bitcoin are statistically significant as
+seen in Figure \@ref(fig:cryprosignif).
 
 ```{r cryprosignif, echo=FALSE, fig.cap="Paired t-tests on standardized returns for all strategies on BTC-USD (p < 0.1). Significant positive differences are shown in orange, negative differences in blue.", out.width="95%"}
 
@@ -958,44 +1120,271 @@ final_plot <- cowplot::plot_grid(
 print(final_plot)
 ```
 
+\newpage
+
 ## Portfolio-Level Analysis
+At the portfolio level, the individual return series are averaged across all assets, which smooths out asset specific effects. This gives a clearer picture of how each strategy behaves in a diversified setting.
 
 ### Sharpe Ratios
 
+Across the equally weighted portfolio, the Buy and Hold, ARMA-GARCH, and
+MACD strategies form a superior group (Table
+\@ref(tab:sharpeportfolio)). In contrast, Bollinger Bands and the Moving
+Average crossover perform noticeably worse. This shows that while BB and
+MA may work well on certain individual assets and markets, their
+performance does not carry over to a diversified portfolio, whereas BH,
+AG, and MACD retain much stronger and more stable behavior across
+markets. Unsurprisingly the Buy and Hold strategy once again has the
+best overall sharpe ratio.
+
+```{r sharpeportfolio, echo=FALSE, results='asis'}
+portfolio <- c("portfolio")
+
+df <- t(mat_sharpe[portfolio, , drop = FALSE])
+df <- as.data.frame(t(df))  
+
+kable(
+  df,
+  caption = "(#tab:sharpecrypto) Sharpe Ratios: Equally Weighted Portfolio (2019-2024)",
+  format = "simple",
+  align = "l"
+)
+```
+
+### Max Drawdown
+
+The maximum drawdown was not a primary focus of this thesis in order to
+keep the evaluation concise and centered on a single performance metric.
+The concern was that introducing multiple criteria could complicate the
+interpretation and obscure the main message. Nevertheless, maximum
+drawdowns were computed for all sectors, and the complete results are
+provided in Appendix \@ref(appendixC).
+
+The table below (Table \@ref(tab:drwadownportfolio))reports the
+portfolio-level maximum drawdowns. Interestingly, both evaluation
+criteria Sharpe ratio and maximum drawdown rank the strategies in the
+same order at the portfolio level, and this correspondence also holds
+for most assets individually.
+
+```{r drwadownportfolio, echo=FALSE, results='asis'}
+portfolio <- c("portfolio")
+
+df <- t(mat_drawdown[portfolio, , drop = FALSE])
+df <- as.data.frame(t(df))  
+
+kable(
+  df,
+  caption = "(#tab:sharpecrypto) Max Drawdowns: Equally Weighted Portfolio",
+  format = "simple",
+  align = "l"
+)
+```
+
+\newpage
+
 ### Statistical Comparison of Strategy Returns (Paired Hypothesis Tests)
 
-```{r, echo = FALSE}
+Almost none of the paired t-tests indicate statistically significant
+differences in standardized returns across strategies (Figure
+\@ref(fig:signifportfolio)). The only significant comparison at the 10%
+level is between the Moving Average strategy and Buy and Hold, where the
+MA portfolio performs worse. Aside from this isolated case, no strategy
+pair shows a statistically meaningful difference. This confirms that on
+a diversified portfolio level the performance is smoothed out leaving
+Buy and Hold, ARMA-GARCH, BB, MA, and MACD mostly statistically
+indistinguishable.
+
+```{r signifportfolio, echo=FALSE, fig.cap="Paired t-tests on standardized returns for all strategies on portfolio-level (p < 0.1). Significant positive differences are shown in orange, negative differences in blue.", out.width="95%"}
 plot_portfolio_matrix_sig_soft(ALL_TVALS_DIR, alpha = 0.10)
 ```
 
-```{r agBTC, echo=FALSE, fig.cap="GC=F: ARMA-GARCH vs Buy and Hold", out.width="70%", fig.keep="last", message=FALSE, warning=FALSE, fig.height=5}
-
-dat_ng <- strat_ag_arma_garch(
-  price        = px_list$`BTC-USD`$`BTC-USD.Adjusted`,
-  model        = "arma(1,0) + garch(1,1)",
-  return_strat = TRUE
-)
-
-par(mar = c(5, 4, 2, 2), mfrow = c(3, 1))
-
-cum_ag <- exp(cumsum(na.omit(BACKT$AG$`BTC-USD`))) - 1
-cum_bh <- exp(cumsum(na.omit(BACKT$BH$`BTC-USD`[index(BACKT$AG$`BTC-USD`)]))) - 1
-
-plot(cum_bh, lwd=2,
-     main="GC=F: Cumulative Returns (BH)", xlab="Time")
-plot(cum_ag, lwd=2,
-     main="GC=F: Cumulative Returns (AG)", xlab="Time")
-
-plot(dat_ng$vola, main = "GC=F GARCH volatility estimates")
-```
+\newpage
 
 ## Case Study Financial Crisis
 
-Crisis Sub-Sample (2008 Financial Crisis)
+```{r, echo = FALSE}
+source("R/main_financial_crisis.R")
+```
+
+To analyse how the strategies behave during extreme market events, a
+dedicated crisis study is conducted using historical data covering the
+dot-com crash (2000-2002) and the global financial crisis (2007-2009).
+
+The same five-year training, one-year test structure is used here.\
+Because the crisis study starts in 2000, the first five years of this
+sample (2000-2004) constitute the training period. The first test year
+therefore becomes 2005, and the procedure continues rolling forward year
+by year.
+
+A direct consequence of this design is that the dot-com crash lies
+entirely inside the training window. It is used to estimate strategy
+parameters in a time of crisis. In contrast, the global financial crisis
+(2007-2009) occurs during the test period, meaning it becomes the first
+major crisis to which the strategies are exposed purely out of sample.
+This makes the 2007-2009 period the primary focus of the crisis-based
+performance comparison.
+
+### Bitcoin exclusion
+
+Bitcoin is not included in the crisis case study.
+
+Although Bitcoin is part of the main analysis (2014-2024), it did not
+exist during the dot-com or financial crises, and reliable data from
+Yahoo Finance begins only in 2014.
+
+Since all strategies require several years of historical observations to
+initialize and tune their parameters, Bitcoin cannot be meaningfully
+evaluated over earlier crisis periods such as 2000-2004 or 2005-2009.
+
+### U.S. Equity Indices
+
+During the financial crisis, both underlying US indices show low to negative Sharpe ratios (Table \@ref(tab:crisissharpeus)), this reflects the long drawdowns of 2007-2009. Compared to the technical trading methods Buy and Hold has a midfield Sharpe Ratio.
+
+The best performance is achieved by the Moving average and ARMA-GARCH strategies.
+The MACD and Bollinger Band Filters have the lowest Sharpe Ratios.
+
+```{r crisissharpeus, echo=FALSE, results='asis'}
+library(knitr)
+
+us_assets <- c("GSPC", "IXIC")
+
+kable(
+  mat_sharpe_crisis[us_assets, ],
+  caption = "(#tab:sharpeus) Sharpe Ratios: U.S. Markets (2005-2009)",
+  format = "simple",
+  align = "l"
+)
+```
+
+The performance of the MA strategy is notable, given its consistent under performance during the main evaluation period. In contrast, the MACD strategy performs somewhat worse in the crisis window compared to its results in normal market conditions for this asset group. The remaining strategies broadly maintain their relative positions, with only minor shifts in their ranking.
+
+The comparatively strong performance of the MA strategy in the crisis window can be explained by the structure of market movements between 2007 and 2009. The market is characterised by long, sustained downward trends with only a limited number of genuine reversals. Moving Average rules react slowly to trend changes, which leads to very few position switches during this period. As a result, the strategy exits in the downturn and remains out of the market for most of the decline, avoiding the bulk of the losses.
+
+In contrast, MACD and Bollinger Bands react to short-term price fluctuations and volatility spikes. During the crisis, such short-lived rebounds, triggering repeated entries and exits. This “overtrading” leads to weaker risk-adjusted performance.
+
+Overall, the dominance of a long, persistent trend in the crisis environment plays directly to the strengths of the MA strategy, while the more reactive indicators are more noise driven.
+
+Figure \@ref(fig:signaluscrisis) visualizes the amount of trades for the IXIC ticker.
+```{r signaluscrisis, echo=FALSE, fig.cap= "Trading signals (POSt) of the MA, Bollinger Bands, and MACD strategies for the NASDAQ 100 (IXIC) during the crisis period."}
+par(mfrow = c(3,1))
+window <- "2005-01-01::2009-12-31"
+
+# MA
+plot(STRATS$MA$IXIC$signal[window], type="h", col="grey60",
+     main="MA Strategy: POSt (IXIC)",
+     ylab="", xlab="", yaxt="n", ylim=c(0,1))
+
+# Bollinger Bands
+plot(STRATS$BB$IXIC$signal[window], type="h", col="grey60",
+     main="Bollinger Bands: POSt (IXIC)",
+     ylab="", xlab="", yaxt="n", ylim=c(0,1))
+
+# MACD
+plot(STRATS$MACD$IXIC$signal[window], type="h", col="grey60",
+     main="MACD Strategy: POSt (IXIC)",
+     ylab="", xlab="Date", yaxt="n", ylim=c(0,1))
+
+```
+
+
+\newpage
+
+### European Equity Indices
+Across both European indices, the crisis-period Sharpe ratios (Figure @ref(fig:crisissharpeEU)) show a broadly consistent pattern.
+Buy and Hold performs weakly in the SSMI and only moderately in the GDAXI, reflecting the deep drawdowns of 2007-2009.
+
+The MA and ARMA-GARCH strategies achieve the highest risk-adjusted returns in this window. The MA rule switches position only occasionally, which reduces the number of unfavourable entries during the crisis. The ARMA-GARCH strategy, by contrast, does update its signal continuously and can adjust the position size gradually rather than switching fully between 0 and 1.
+
+Bollinger Bands rank unexpectedly high for the SSMI but fall to the lower end of the spectrum for the GDAXI, which suggests that part of their performance may be asset-specific or due to chance. MACD performs poorly in the SSMI but somewhat better in the GDAXI, though it does not reach the top-performing group. Overall, the two indices favour similar approaches, and the relative rankings differ only slightly between the markets.
+
+In summary, strategies that change position only occasionally achieve better outcomes in this crisis period than those that react strongly to short-term price movements. This pattern is consistent with the results observed for the U.S. indices.
+
+```{r crisissharpeEU, echo=FALSE, results='asis'}
+library(knitr)
+
+us_assets <- c("SSMI", "GDAXI")
+
+kable(
+  mat_sharpe_crisis[us_assets, ],
+  caption = "(#tab:sharpeus) Sharpe Ratios: European Markets (2005-2009)",
+  format = "simple",
+  align = "l"
+)
+```
+
+### Energy Commodities
+For the energy commodities, the crisis-period Sharpe ratios(Figure \@ref(fig:crisissharpeENERG)) show a pattern similar to the equity indices. MA and ARMA-GARCH again achieve the highest values for both Crude Oil and Natural Gas, while Bollinger Bands and MACD perform poorly. Buy and Hold performs slightly better here than in the equity markets, particularly for Natural Gas, but still remains below the top-performing methods. Overall, the relative ordering of strategies closely resembles the results observed in the equity segment.
+```{r crisissharpeENERGY, echo=FALSE, results='asis'}
+library(knitr)
+
+us_assets <- c("CL=F", "NG=F")
+
+kable(
+  mat_sharpe_crisis[us_assets, ],
+  caption = "(#tab:sharpeus) Sharpe Ratios: Energy Commodities (2005-2009)",
+  format = "simple",
+  align = "l"
+)
+```
+
+
+### Metals
+The metal segment shows a markedly different pattern compared to the other asset groups.
+Gold and, to some extent, silver achieve relatively high Sharpe ratios (\@ref(fig:crisissharpeMETA)) for Buy and Hold during the crisis period, which aligns with their commonly observed role as safe-haven assets in periods of financial stress. This behaviour also affects the relative performance of the trading rules. Unlike in most other markets, MACD performs comparatively well for gold and silver, while MA and ARMA-GARCH fall behind.
+
+Copper, by contrast, behaves more traditionally and shows a very different ranking, with MA and ARMA-GARCH performing strongly and MACD and Bollinger Bands less so.
+Overall, the three metals respond differently to the evaluated strategies in the crisis window, and no uniform ranking emerges for this group.
+
+```{r crisissharpeMETAL, echo=FALSE, results='asis'}
+library(knitr)
+
+us_assets <- c("GC=F", "SI=F", "HG=F")
+
+kable(
+  mat_sharpe_crisis[us_assets, ],
+  caption = "(#tab:sharpeus) Sharpe Ratios: Metals (2005-2009)",
+  format = "simple",
+  align = "l"
+)
+```
+
+
+### Portfolio-Level Results
+For the equally weighted portfolio during the crisis period, ARMA-GARCH achieves the highest Sharpe ratio (\@ref(tab:crisissharpePORTFOLIO)), followed closely by the MA strategy. Buy and Hold performs moderately well, while Bollinger Bands deliver weaker results and MACD shows the lowest value among the methods. Overall, the portfolio-level results are broadly consistent with the crisis findings at the asset level, with ARMA–GARCH and MA outperforming the more reactive approaches.
+```{r crisissharpePORTFOLIO, echo=FALSE, results='asis'}
+
+portfolio <- c("portfolio")
+
+df <- t(mat_sharpe_crisis[portfolio, , drop = FALSE])
+df <- as.data.frame(t(df))  
+
+kable(
+  df,
+  caption = "(#tab:sharpecrypto) Sharpe Ratios: Equally Weighted Portfolio (2005-2009)",
+  format = "simple",
+  align = "l"
+)
+```
+
+Compared to the main evaluation period, the relative performance of the strategies changes noticeably in the crisis window.
+The MA strategy, which performed poorly in the main analysis, achieves substantially better results during the crisis, particularly relative to Buy and Hold. MACD, on the other hand, performed reasonably well in the main period but does not carry this behaviour into the crisis environment. ARMA-GARCH delivers strong results in both periods, showing comparatively stable performance across market conditions. Bollinger Bands, by contrast, perform weakly in both settings and do not show improvement during the crisis.
+
+\newpage
+
+#### Statistical Comparison of Portfolio Strategy Returns during the Finantial Crisis (Paired Hypothesis Tests)
+
+The portfolio-level significance matrix, based on standardized cumulative returns, shows only a small number of statistically detectable differences between the strategies during the crisis period. At the 10% level, all significant results involve the MA strategy. MA differs significantly from Bollinger Bands and from MACD, the positive t-values in these comparisons indicate that MA outperforms both BB and MACD on a statistically meaningful level. No other pairwise differences reach significance, meaning that the remaining strategies do not statistically separate from each other in this period.
+
+```{r signifportfoliocrisis, echo=FALSE, fig.cap="Paired t-tests on standardized returns for all strategies on portfolio-level during the crisis period (p < 0.1). Significant positive differences are shown in orange, negative differences in blue.", out.width="95%"}
+plot_portfolio_matrix_sig_crisis(ALL_TVALS_DIR_CRISIS, alpha = 0.10)
+```
+This result is notable because ARMA-GARCH achieves the highest Sharpe ratio in the crisis-period portfolio, yet does not produce statistically significant differences in the paired tests. This is explained by the fact log-Return to variance ratio.
+
+Overall, the significance matrix highlights that MA is the only strategy that shows clear, statistically supported advantages during the crisis period, specifically against BB and MACD, while the remaining methods, including ARMA-GARCH, do not differ significantly from one another.
 
 ## Summary of Findings
 
-crypto
+FEHLT NOCH
 
 As a result, classical indicators such as Moving Averages or Bollinger
 Bands, which rely on smoother trend structures, tend to react

@@ -40,6 +40,7 @@ library(PerformanceAnalytics)
 library(lubridate)
 library(car)
 library(knitr)
+library(car)
 
 # Source your strategy / backtest code
 source("R/strategies.R")
@@ -52,6 +53,7 @@ source("R/Plots.R")
 
 
 # register the code chunks
+knitr::read_chunk("R/Analysis_Tuning.R")
 knitr::read_chunk("R/strategies.R")
 knitr::read_chunk("R/ARMA_GARCH/ARMA_GARCH_Forecasts.R")
 knitr::read_chunk("R/backtesting.R")
@@ -71,8 +73,17 @@ set.seed(123)
 
 \clearpage
 
+\pagenumbering{gobble}
 # Abstract {.unnumbered}
+This thesis evaluates four rule-based trading strategies—Moving Average crossovers, Bollinger Bands, MACD, and an ARMA-GARCH-based volatility-scaling rule and compares their performance against each other and against a Buy and Hold benchmark across equities, energy commodities, metals, and cryptocurrency. An equally weighted portfolio is included to complement the asset-level analysis. Daily data is used, with technical indicators tuned in rolling five-year windows and ARMA-GARCH models estimated once in-sample and applied out-of-sample. Performance is assessed using Sharpe ratios and paired hypothesis tests based on standardized cumulative returns. 
 
-This is a simple paragraph at the beginning of the document. A brief introduction about the main subject.
+In the main evaluation period (2014-2024), Buy-and-Hold achieves the strongest overall performance, followed by ARMA-GARCH. The technical indicators generally underperform relative to the benchmark and exhibit notable variation across asset classes, especially in the metal segment.
+
+The evaluation of the financial crisis (2005-2009) produces a substantially different ranking. ARMA-GARCH performs best during the downturn, followed by the Moving Average strategy, while MACD and Bollinger Bands deliver weaker and more inconsistent results. The behaviour across the metal contracts differs strongly, and no single method dominates the group.
+
+Statistical testing identifies only a few meaningful differences on the portfolio level in both evaluation windows. In the main period, Buy and Hold significantly outperforms the Moving Average strategy, whereas in the crisis period, the Moving Average strategy significantly outperforms Bollinger Bands and MACD. No other pairwise differences reach significance on a portfolio level.
+
+Overall, the findings show that the benchmark dominates in stable market conditions, while ARMA-GARCH and, to a lesser extent, the Moving Average strategy produce more resilient outcomes during periods of market stress. More reactive indicators such as MACD and Bollinger Bands behave inconsistently across assets and regimes. ARMA-GARCH is the most consistent method across both the main evaluation period and the financial crisis.
+
 
 \tableofcontents

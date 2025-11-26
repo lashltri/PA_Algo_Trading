@@ -101,11 +101,6 @@ BACKT <- list(BH = lapply(STRATS$BH, function(x){backtest_log_ret(x)}),
               MACD = lapply(STRATS$MACD, function(x){backtest_log_ret(x)}))
 
 
-#For comparability we want all TS to have intersecting dates
-all_series <- unlist(BACKT, recursive = FALSE)
-common_idx <- Reduce(intersect, lapply(all_series, function(x) as.Date(index(x))))
-BACKT <- lapply(BACKT, function(group) lapply(group, function(x) x[common_idx]))
-rm(all_series)
 
 
 # ARIMA GARCH------------------------------------------------------------
@@ -113,34 +108,39 @@ rm(all_series)
 
 BACKT$AG <- list(SSMI = strat_ag_arma_garch(price = px_list$SSMI$SSMI.Adjusted,
                                             model = "arma(1,0) + garch(1,1)",
-                                            start_out_sample = "2005-01-18"),
+                                            start_out_sample = "2005-01-01"),
                  GSPC = strat_ag_arma_garch(price = px_list$GSPC$GSPC.Adjusted,
                                             model = "arma(0,1) + garch(1,1)",
-                                            start_out_sample = "2005-01-18"),
+                                            start_out_sample = "2005-01-01"),
                  IXIC = strat_ag_arma_garch(price = px_list$IXIC$IXIC.Adjusted,
                                             model = "arma(0,1) + garch(1,1)",
-                                            start_out_sample = "2005-01-18"),
+                                            start_out_sample = "2005-01-01"),
                  GDAXI = strat_ag_arma_garch(price = px_list$GDAXI$GDAXI.Adjusted,
                                              model = "arma(1,0) + garch(1,1)",
-                                             start_out_sample = "2005-01-18"),
+                                             start_out_sample = "2005-01-01"),
                  `CL=F` = strat_ag_arma_garch(price = px_list$`CL=F`$`CL=F.Adjusted`,
                                               model = "arma(1,0) + garch(1,1)",
-                                              start_out_sample = "2005-01-18"),
+                                              start_out_sample = "2005-01-01"),
                  `NG=F` = strat_ag_arma_garch(price = px_list$`NG=F`$`NG=F.Adjusted`,
                                               model = "arma(1,0) + garch(1,1)",
-                                              start_out_sample = "2005-01-18"),
+                                              start_out_sample = "2005-01-01"),
                  `GC=F` = strat_ag_arma_garch(price = px_list$`GC=F`$`GC=F.Adjusted`,
                                               model = "arma(1,0) + garch(1,1)",
-                                              start_out_sample = "2005-01-18"),
+                                              start_out_sample = "2005-01-01"),
                  `SI=F` = strat_ag_arma_garch(price = px_list$`SI=F`$`SI=F.Adjusted`,
                                               model = "arma(1,0) + garch(1,1)",
-                                              start_out_sample = "2005-01-18"),
+                                              start_out_sample = "2005-01-01"),
                  `HG=F` = strat_ag_arma_garch(price = px_list$`HG=F`$`HG=F.Adjusted`,
                                               model = "arma(1,0) + garch(1,1)",
-                                              start_out_sample = "2005-01-18")
+                                              start_out_sample = "2005-01-01")
 )
 
 
+#For comparability we want all TS to have intersecting dates
+all_series <- unlist(BACKT, recursive = FALSE)
+common_idx <- Reduce(intersect, lapply(all_series, function(x) as.Date(index(x))))
+BACKT <- lapply(BACKT, function(group) lapply(group, function(x) x[common_idx]))
+rm(all_series)
 
 # Create Portfolio -------------------------------------------------------      
 
@@ -173,29 +173,29 @@ EVAL_PORTF <- list(
 
 # Extract Sharpe ratios and Drawdowns into matrices 
 
-mat_sharpe <- sapply(EVAL_BT, function(x) sapply(x, function(y) y$Sharpe))
-mat_drawdown <- sapply(EVAL_BT, function(x) sapply(x, function(y) y$MaxDrawdown))
+mat_sharpe_crisis <- sapply(EVAL_BT, function(x) sapply(x, function(y) y$Sharpe))
+mat_drawdown_crisis <- sapply(EVAL_BT, function(x) sapply(x, function(y) y$MaxDrawdown))
 
 # Add portfolio rows
-mat_sharpe <- rbind(mat_sharpe,
+mat_sharpe_crisis <- rbind(mat_sharpe_crisis,
                     sapply(EVAL_PORTF, function(x) sapply(x, function(y) y$Sharpe)))
-rownames(mat_sharpe)[nrow(mat_sharpe)] <- "portfolio"
+rownames(mat_sharpe_crisis)[nrow(mat_sharpe_crisis)] <- "portfolio"
 
-mat_drawdown <- rbind(mat_drawdown,
+mat_drawdown_crisis <- rbind(mat_drawdown_crisis,
                       sapply(EVAL_PORTF, function(x) sapply(x, function(y) y$MaxDrawdown)))
-rownames(mat_drawdown)[nrow(mat_drawdown)] <- "portfolio"
+rownames(mat_drawdown_crisis)[nrow(mat_drawdown_crisis)] <- "portfolio"
 
-mat_sharpe
-mat_drawdown
+mat_sharpe_crisis
+mat_drawdown_crisis
 
 
 # Hypothesis Testing  Backtest Index-----------------------------------------
-STD_RET <- standardized_returns(returns = BACKT)
+STD_RET <- standardized_returns(returns = BACKT, portf = PORTF)
 
 grid <- expand.grid(A = names(STD_RET), B = names(STD_RET), stringsAsFactors = FALSE)
 grid <- subset(grid, A != B)
 
-ALL_TVALS_DIR <- do.call(rbind, lapply(seq_len(nrow(grid)), function(i) {
+ALL_TVALS_DIR_CRISIS <- do.call(rbind, lapply(seq_len(nrow(grid)), function(i) {
   A <- grid$A[i]; B <- grid$B[i]
   out <- paired_t_value(STD_RET[[A]], STD_RET[[B]])
   transform(out, strat_A = A, strat_B = B)

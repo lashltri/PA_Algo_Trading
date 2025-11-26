@@ -10,13 +10,36 @@
 ```
 :::
 
-### B. Max Drawdowns Across Assets {#appendixB .unnumbered}
+\newpage
+## B. Bollinger Band Strategy Function {#appendixB .unnumbered}
 
-```{r, echo=FALSE}
+::: {#exm:agfun .example}
+\label{exm:agfun} Bollinger Band function in R
+
+```{r, ref.label='strat_bb-fn', echo=TRUE, eval=FALSE}
+
+```
+:::
+
+
+\newpage
+## C. Max Drawdowns Across Assets {#appendixC .unnumbered}
+
+```{r, echo=FALSE, results='asis'}
 library(knitr)
 kable(mat_drawdown,
       caption = "(\\#tab:matdrawdown) Maximum Drawdowns Across Assets",
       format = 'simple', align = "l")
 ```
 
-### 
+\newpage
+
+## D. Main Analysis {#appendixD .unnumbered}
+
+
+::: {#exm:analysisfun .example}
+\label{exm:analysisfun}Main Analysis in R
+
+```{r show_main_analysis,ref.label = c('main_config', 'main_data', 'main_signals', 'main_backtests', 'main_garch', 'main_eval'), echo = TRUE, eval = FALSE}
+```
+:::

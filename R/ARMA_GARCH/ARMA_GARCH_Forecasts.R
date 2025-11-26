@@ -84,6 +84,7 @@ strat_ag_arma_garch <- function(price,
     return(arma_garch_log_ret[paste(start_out_sample,"/",sep="")])
   }else{
     list(
+      return = log_ret_out[paste(start_out_sample,"/",sep="")],
       price    = price[paste(start_out_sample,"/",sep="")],
       signal   = signal[paste(start_out_sample,"/",sep="")],
       param    = ARMA_GARCH@fit$coef,

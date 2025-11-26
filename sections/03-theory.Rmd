@@ -1,10 +1,7 @@
 # Theoretical Background
+In this chapter 
 
-## Financial Markets and Portfolios
-
-## Trading Indicators
-
-### Moving Averages {#movingaverages}
+## Moving Averages {#movingaverages}
 
 Moving averages are among the most widely used tools in technical analysis.\
 They smooth out short-term fluctuations in order to reveal the underlying trend of a time series.
@@ -19,59 +16,223 @@ Each observation in the chosen window has the same weight.
 
 The *Exponential Moving Average (EMA)* assigns more weight to recent prices and is defined as [@wildislidestradingindicators]:
 
-$$EMA_t(N) =
+\begin{equation}\label{eq:ema}
+EMA_t(N) =
 \frac{1}{\sum_{k=0}^{m} \alpha^k}
 \sum_{k=0}^{m} \alpha^k \, x_{t-k},  
-\quad \alpha = 1 - \frac{1}{N}$$
-
-#### Moving Average Crossings
-
-A common trading rule is based on the crossing of a short-term and a long-term moving average [@wildislidestradingindicators].\
-Let $N_1$ represent the short-term window and $N_2$ the long-term window, with $N_1 < N_2$.\
-The trading position $POS_{t+1}$ at time $t$ is defined as:
-
-\begin{equation}\label{eq:ma_crossover}
-\mathrm{POS}_{t+1} =
-\begin{cases}
-1,  & \text{if } MA_t(N_1) > MA_t(N_2) \ \text{(long)}, \\[6pt]
--1, & \text{if } MA_t(N_1) < MA_t(N_2) \ \text{(short)}, \\[6pt]
-0,  & \text{if } MA_t(N_1) = MA_t(N_2) \ \text{(neutral)}.
-\end{cases}
+\quad \alpha = 1 - \frac{1}{N}
 \end{equation}
 
-### Bollinger Bands
 
-*(To be completed — explain upper/lower bands and trading logic.)*
 
-### Moving Average Convergence Divergence
+## Bollinger Bands {#bbtheory}
+Bollinger Bands are constructed from a moving average and a rolling standard deviation computed over a fixed window. 
+Given $x_t$ is the asset price at time $t$. Two parameters determine the indicator:
+\begin{itemize}
+    \item $N$: window length for the moving average and variance
+    \item $K$: scaling factor for the band width
+\end{itemize}
+Typical values used in practice and in the course material are $N = 20$ and $K = 2$.
 
-### Momentum
+**Moving Average (Centre Line)**
 
-*(Explain momentum as rate of change or difference in price.)*
+The middle band is a simple moving average of the last $N$ observations as defined in the Equation \@ref(eq:sma).
 
-## ARMA and GARCH Models {#theoryarmagarch}
+**Rolling Variance**
 
-Conditional Mean Equation: \begin{equation}\label{eq:armamean}
+The local price dispersion used for the band width is the classical rolling variance:
+\begin{equation}\label{eq:rollingvola}
+\sigma_t^2 = \frac{1}{N}
+\sum_{k=0}^{N-1} \left( x_{t-k} - MA_t \right)^2.
+\end{equation}
+
+This corresponds to the standard population variance formula. This expression assumes a stationary input process. Since asset prices $x_t$ are non-stationary, the variance estimate is formally misspecified.[@wildislidestradingindicators]
+
+**Upper and Lower Bands**
+
+The upper and lower bands are determined by shifting the moving average by $K$ times the rolling standard deviation:
+$$
+U_t = MA_t + K\sigma_t;
+\qquad
+L_t = MA_t - K\sigma_t
+$$
+
+
+
+## Moving Average Convergence Divergence {#macdtheory}
+The Moving Average Convergence Divergence (MACD) is a trend based
+indicator constructed from exponential moving averages (Equation \@ref(eq:ema)) of different lengths. Its main feature is that moving averages are applied to
+moving averages, this results in a double-smoothed series that emphasises
+changes in the strength and direction of a trend, reffered to as momentum.[@wildislidestradingindicators]
+
+\begin{itemize}
+\item fast: window length of the short-term EMA
+\item slow: window length of the long-term EMA 
+\item signal: window length of the EMA applied to the MACD line
+\end{itemize}
+The standard configuration used in practice is (fast=12,slow=26,signal=9).
+
+**MACD line**
+
+the difference between a short-term (“fast”) EMA and a long-term (“slow”) EMA.
+$$
+{MACD}_t = \mathrm{EMA}_t(S) - \mathrm{EMA}_t(L)
+$$
+
+**Signal line**
+
+an EMA of the MACD series, the double smoothing takes place here.
+$$
+{Signal}_t = \mathrm{EMA}_t(\mathrm{MACD}, R)
+$$
+
+**Divergence (histogram)**
+the difference between the MACD and its signal line.
+$$
+{Div}_t = \mathrm{MACD}_t - \mathrm{Signal}_t
+$$
+The most common specification for the parameters $(S,L,R)$ are $\mathrm{MACD}(12,26,9)$.
+
+## ARMA-GARCH Models {#theoryarmagarch}
+The ARMA-GARCH model combines an ARMA$(p,q)$ specification for the
+conditional mean with a GARCH$(n,m)$ process for the conditional
+variance. 
+
+Conditional Mean  Equation:
+\begin{equation}\label{eq:arma}
 y_t = \mu
-    + \sum_{i=1}^{p} \phi_i y_{t-i}
-    + \sum_{j=1}^{q} \theta_j \varepsilon_{t-j}
-    + \varepsilon_t
+      + \sum_{i=1}^{p} a_i y_{t-i}
+      + \epsilon_t
+      + \sum_{j=1}^{q} b_j \epsilon_{t-j},
+\end{equation}
+The Model assumes that $y_t$ is a stationary process.
+
+Innovation term $\epsilon_t$:
+\begin{equation}\label{eq:eps}
+\epsilon_t = \sigma_t u_t,
+\end{equation}
+with $u_t$ an i.i.d. error term with zero mean.
+
+Conditional Variance Equation:
+\begin{equation}\label{eq:garch}
+\sigma_t^2
+= d
++ \sum_{i=1}^{n} \alpha_i \sigma_{t-i}^2
++ \sum_{j=1}^{m} \beta_j \epsilon_{t-j}^2.
 \end{equation}
 
-Conditional Variance Equation: \begin{equation}
-\label{eq:garchvariance}
-\sigma_t^2 = \omega
-           + \sum_{i=1}^{r} \alpha_i \varepsilon_{t-i}^2
-           + \sum_{j=1}^{s} \beta_j \sigma_{t-j}^2
-\end{equation} [@wildigarch]
+Equation\@ref(eq:arma) describes the conditional mean of the process and is used for obtaining optimal point forecasts.
+Equation\@ref(eq:garch) it defines the conditional variance of the process and is used to predict the forecast error variance.
 
-## Evaluation Criteria
+The process $y_t$ is referred to as an ARMA$(p,q)$-GARCH$(n,m)$ process.
+Model identification requires selecting the orders $p,q,n,m$.
+For many financial time series, the simple specification $n=m=1$ is
+suitable, and low-order ARMA components with $p,q \le 1$
+typically provide good benchmarks. [@tsascript] [@wildigarch]
 
--   **Sharpe Ratio**
--   **Maximum Drawdown**
--   **Mean Squared Error (MSE)**
+### Model Estimation
+
+The parameters of the ARMA-GARCH model are estimated by maximizing the log-likelihood.
+
+$$
+\ell_t(\theta)
+=
+-\tfrac{1}{2}\left[
+\log \sigma_t^2(\theta)
++
+\frac{\epsilon_t^2(\theta)}{\sigma_t^2(\theta)}
+\right];
+\qquad
+\hat{\theta}
+=
+\arg\max_{\theta}
+\sum_{t=1}^{T} \ell_t(\theta)
+$$
+
+The optimization is carried out numerically.
+Parameter restrictions:
+
+$$
+d > 0, \quad \alpha_i \ge 0,\ \beta_j \ge 0,\quad
+\sum_{i=1}^{n}\alpha_i + \sum_{j=1}^{m}\beta_j < 1.
+$$
+These constraints guarantee a positive conditional variance of the process.
+
+### Model Diagnostics
+After estimating an ARMA$(p,q)$–GARCH$(n,m)$ model, it is essential to verify whether the specifications are adequate. The diagnostic analysis is based on the standardized residuals
+$$
+\hat{u}_t = \frac{\hat{\epsilon}_t}{\hat{\sigma}_t},
+$$
+which should behave like an i.i.d. sequence under the model assumptions.[@tsascript] [@wildigarch]
+
+**Autocorrelation**
+
+A first diagnostic step is the inspection of the autocorrelation structure of the standardized residuals $\hat{u}_t$ and their squares $\hat{u}_t^2$.  
+The sample autocorrelation function (ACF) is defined as:
+
+$$
+\hat{\rho}(k)
+=
+\frac{
+\sum_{t=k+1}^{T} (x_t-\bar{x})(x_{t-k}-\bar{x})
+}{
+\sum_{t=1}^T (x_t-\bar{x})^2 }.
+$$
+The ACF of $\hat{u}_t$ should not have significant correlation if the conditional mean equation (Equation \@ref(eq:arma)) is correctly specified.  
+The ACF of $\hat{u}_t^2$ should show no significant correlation if the conditional variance equation (Equation \@ref(eq:garch)) is well specified.[@tsascript] [@wildigarch]
+
+**Ljung-Box-Statistic**
+
+To formally test for remaining autocorelation in multiple lags at once, the Ljung–Box statistic is applied. In the version adjusted for ARMA estimation, the statistic is computed as
+
+$$
+Q(m)
+=
+(T - \hat{q})(T - \hat{q} + 2)
+\sum_{i=1}^{m}
+\frac{\widehat{\mathrm{acf}}_{\hat{q}}(i)^2}{T - \hat{q} - i},
+$$
+
+where:
+- $T$ is the sample size,
+- $\widehat{\mathrm{acf}}_{\hat{q}}(i)$ is the residual autocorrelation at lag $i$,
+- $\hat{q}$ is the number of estimated ARMA parameters, $\hat{q} = p + q$ or 
+
+The test is applied to both $\hat{u}_t$ and $\hat{u}_t^2$. A well specified ARMA-GARCH model should have non-significant test results for both sequences.[@tsascript] [@wildigarch]
+
+
+## Sharpe Ratio
+\begin{equation}\label{eq:sharpe}
+SR = \frac{\mathbb{E}[R_t - R_f]}{\sigma(R_t - R_f)} \sqrt{252}.
+\end{equation}
+
+The Sharpe ratio relates the average excess return of an investment to its standard deviation
+and is used as a standardised measure of risk-adjusted performance. For daily data,
+the annualisation factor \(\sqrt{252}\) is applied.
+
 
 ## Hypothesis Testing
+The paired t-test is used to assess whether two trading strategies have
+equal mean performance when evaluated over the same time periods. Rather
+than analysing the two return series separately, the test is applied to
+the daily performance differences.
+$$
+d_t = A_t - B_t,
+$$
 
-Explain what a *t-test* is and how it can be applied to compare performance metrics\
-(e.g., the Sharpe ratio approximately follows a *t*-distribution under certain assumptions).
+
+Under the null hypothesis that neither strategy outperforms the other,
+$$
+H_0:\ \mathbb{E}[d_t] = 0,
+$$
+the test statistic
+$$
+t = \frac{\sqrt{n}\,\bar d}{s_d}
+$$
+follows a t-distribution with $n-1$ degrees of freedom, where $\bar d$
+denotes the sample mean of the differences and $s_d$ their empirical
+standard deviation.
+
+The validity of the paired $t$-test requires
+that the difference series is approximately uncorrelated and has a
+reasonably stable variance. [@hofer2023gstat]

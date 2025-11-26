@@ -10,10 +10,11 @@ source("R/ARMA_GARCH/ARMA_GARCH_Forecasts.R")
 source("R/Hypothesis_Testing.R")
 source("R/Plots.R")
 
-#-----------------------------Config--------------------------------------------
+## ---- main_config
+#Config-------------------------------------------------------------------------
 
 symbols   <- c("^SSMI","^GSPC","^IXIC","^GDAXI","BTC-USD","CL=F","NG=F","GC=F","SI=F","HG=F")
-date_from <- "2010-01-01"
+date_from <- "2014-01-01"
 date_to   <- "2024-12-31"
 date_from_to <- paste0(date_from, "::", date_to)
 
@@ -37,8 +38,8 @@ PARAMS <- list(
 )
 
 
-
-#---------------------------------Data------------------------------------------  
+## ---- main_data
+#Data--------------------------------------------------------------------------- 
 getSymbols(symbols, src="yahoo", from= date_from, to=date_to, auto.assign=TRUE)
 
 px_list <- list(
@@ -61,8 +62,8 @@ px_list <- lapply(px_list, function(x) na.approx(x, maxgap=5))
 #lapply(px_list, function(x)any(is.na(c)))         
 px_list$`GC=F`$`GC=F.Adjusted`[px_list$`GC=F`$`GC=F.Adjusted`<= 0]<-0.01
 
-
-#--------------------------indicators and signals-------------------------------
+## ---- main_signals
+#indicators and signals---------------------------------------------------------
 STRATS$BH <- lapply(px_list, strat_bh)
 
 STRATS$MA <- Map(function(x, nm) {
@@ -90,7 +91,7 @@ STRATS$MACD <- Map(function(x, nm) {
                          backtestfun = backtest_log_ret)
 }, px_list, names(px_list))
 
-
+## ---- main_backtests
 # Backtests ---------------------------------------------------------------
 
 BACKT <- list(BH = lapply(STRATS$BH, function(x){backtest_log_ret(x)}),
@@ -105,7 +106,7 @@ common_idx <- Reduce(intersect, lapply(all_series, function(x) as.Date(index(x))
 BACKT <- lapply(BACKT, function(group) lapply(group, function(x) x[common_idx]))
 rm(all_series)
 
-
+## ---- main_garch
 # ARIMA GARCH------------------------------------------------------------
 # This strategy requires extra manual care so it circumvents the pipeline
 
@@ -131,7 +132,7 @@ BACKT$AG <- list(SSMI = strat_ag_arma_garch(price = px_list$SSMI$SSMI.Adjusted,
                                               model = "arma(1,0) + garch(1,1)")
                  )
 
-
+## ---- main_eval
 # Create Portfolio -------------------------------------------------------      
 
 PORTF <- lapply(BACKT, create_portfolio)
@@ -180,7 +181,7 @@ mat_drawdown
 
 
 # Hypothesis Testing  Backtest Index-----------------------------------------
-STD_RET <- standardized_returns(returns = BACKT)
+STD_RET <- standardized_returns(returns = BACKT, portf = PORTF)
 
 grid <- expand.grid(A = names(STD_RET), B = names(STD_RET), stringsAsFactors = FALSE)
 grid <- subset(grid, A != B)
@@ -192,7 +193,7 @@ ALL_TVALS_DIR <- do.call(rbind, lapply(seq_len(nrow(grid)), function(i) {
 }))
 
 
-
+## ---- end
 save.image("R/Results/my_workspace.RData")
 
 
@@ -243,75 +244,55 @@ save.image("R/Results/my_workspace.RData")
 # 
 #--- MA Strategy plot
 # par(mar = c(5, 4, 4, 2) + 1)
-# SSMI <- px_list$SSMI$SSMI.Adjusted
-# SMA_N1 <- STRATS$MA$SSMI$strategy$`SMA short`
-# SMA_N2 <- STRATS$MA$SSMI$strategy$`SMA long`
-# signal <- STRATS$MA$SSMI$signal
+# IXIC <- STRATS$MA$IXIC$price
+# SMA_N1 <- STRATS$MA$IXIC$strategy$`SMA short`
+# SMA_N2 <- STRATS$MA$IXIC$strategy$`SMA long`
+# signal <- STRATS$MA$IXIC$signal
 # 
-# chartSeries(SSMI, name = "SSMI MA Strategy",
+# chartSeries(IXIC, name = "SSMI MA Strategy",
 #             type = "line",
 #             subset=date_from_to,
 #             theme=chartTheme("white"))
 # addTA(SMA_N1,col="red", on = 1)
 # addTA(SMA_N2,col="blue", on = 1)
-# addTA(signal,col="grey")
+# addTA(signal,col="grey", type = "h", on = NA)
 
 # 
 # 
 # #--- BB Strategy plot
 
-# mavg <- STRATS$BB$SSMI$strategy$mavg
-# up <- STRATS$BB$SSMI$strategy$up
-# dn <- STRATS$BB$SSMI$strategy$dn
-# signal <- STRATS$BB$SSMI$signal
-# from_to<-"2010-08::2020-09-15"
+# mavg <- STRATS$BB$IXIC$strategy$mavg
+# up <- STRATS$BB$IXIC$strategy$up
+# dn <- STRATS$BB$IXIC$strategy$dn
+# signal <- STRATS$BB$IXIC$signal
+# #from_to<-"2010-08::2020-09-15"
 # 
-# chartSeries(STRATS$BB$SSMI$price,
+# chartSeries(STRATS$BB$IXIC$price,
 #             type = "line",
-#             subset=from_to,
+# #            subset=from_to,
 #             theme=chartTheme("white"), name = "SSMI BB Strategy")
 # addTA(mavg,type="S",col="blue", on = 1)
 # addTA(up,type="S",col="darkgrey", on = 1, lty = 2)
 # addTA(dn,type="S",col="darkgrey", on = 1, lty = 2)
 # addTA(signal,col="grey", type = "h")
-# 
-# 
-# 
-# 
-# `BTC-USD` <- px_list$`BTC-USD`$`BTC-USD.Adjusted`
-# mavg <- STRATS$BB$`BTC-USD`$strategy$mavg
-# up <- STRATS$BB$`BTC-USD`$strategy$up
-# dn <- STRATS$BB$`BTC-USD`$strategy$dn
-# signal <- STRATS$BB$`BTC-USD`$signal
-# from_to<-"2010-08::2020-09-15"
-# 
-# chartSeries(`BTC-USD`,
-#             type = "line",
-#             subset=from_to,
-#             theme=chartTheme("white"))
-# b_bands <-BBands(`BTC-USD`,n=20, sd=2)
-# addTA(b_bands$mavg,type="S",col="red", on = 1)
-# addTA(b_bands$up,type="S",col="blue", on = 1)
-# addTA(b_bands$dn,type="S",col="blue", on = 1)
-# addTA(signal,col="grey")
-# 
-# rm(SSMI, SMA_N1, SMA_N2, signal)
+
+
 
 # #--- MACD Strategy plot
 # # Pick the same time window
 # from_to <- "2019-11-01::2020-11-01"
+
+# price   <- STRATS$MACD$IXIC$price
+# price   <- STRATS$MACD$IXIC$price
+# signal  <- STRATS$MACD$IXIC$signal
 # 
-# price   <- STRATS$MACD$GDAXI$price
-# price   <- STRATS$MACD$GDAXI$price
-# signal  <- STRATS$MACD$GDAXI$signal
-# 
-# macd_line   <- STRATS$MACD$GDAXI$strategy$macd
-# signal_line <- STRATS$MACD$GDAXI$strategy$signal
+# macd_line   <- STRATS$MACD$IXIC$strategy$macd
+# signal_line <- STRATS$MACD$IXIC$strategy$signal
 # macd_hist   <- macd_line - signal_line
 # 
 # chartSeries(price,
 #             type   = "line",
-#             subset = from_to,
+# #            subset = from_to,
 #             theme  = chartTheme("white"),
 #             name   = "GDAXI MACD Strategy")
 # 

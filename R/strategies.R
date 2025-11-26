@@ -57,7 +57,7 @@ strat_macd <- function(param, price) {
 
 
 
-# ## ---- strat_ag-fn
+# ---- strat_ag-fn
 # sigma_t_AR_GARCH<-function(y_out,fit, y_in) # recursive sigma_t and y_t_hat
 # {
 #   # Vola based on in-sample parameters
@@ -153,19 +153,15 @@ strat_macd <- function(param, price) {
 #----------------------------Moving Average-------------------------------------
 ## ---- strat_ma-fn
 strat_ma <- function(param,
-                     price,
-                     expo = FALSE) {
+                     price) {
   n1 <- param[1]
   n2 <- param[2]
   price <- Ad(price)
   
-  if (expo){
-    sma_short <- EMA(price, n1)
-    sma_long  <- EMA(price, n2)
-  } else {
-    sma_short <- SMA(price, n1)
-    sma_long  <- SMA(price, n2)
-  }
+
+  sma_short <- SMA(price, n1)
+  sma_long  <- SMA(price, n2)
+
   
   signal <- ifelse(sma_short > sma_long,  1,
                    ifelse(sma_short < sma_long, 0, 0))

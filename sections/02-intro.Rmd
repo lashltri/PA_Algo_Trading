@@ -1,11 +1,26 @@
-# Introduction
+# Introduction 
+\pagenumbering{arabic}
+
+## Background
+### Existing Literature
+A reference for this thesis is the study by Zeng (2019), who evaluated more than 15,000 technical trading rules across U.S. equities. Zeng examines three families of strategies, momentum filters, moving-average crossovers, and pairs trading and evaluates each rule against a zero return benchmark. The results show that many rules do achieve returns above zero, meaning their performance is better than pure noise. However, these returns are not higher than the mean return of the market, and therefore cannot be interpreted as evidence of excess performance. The rules may outperform zero, but they do not outperform buy and hold. Zeng thus concludes that, after adjusting for data-snooping and out of sample validation, there is no consistent evidence that any of the tested rules produce meaningful excess returns.[@yujie1994comprehensive]
+
+Only one of the strategies examined in this thesis the moving-average crossover directly overlaps with Zeng’s framework. The remaining strategies, including MACD, Bollinger Bands, and ARMA-GARCH based volatility scaling, were not part of Zeng’s analysis and therefore extend the scope beyond his original study.
+
+A similar result is provided by Marshall, Cahan and Cahan (2010), who tested more than 5,000 widely used technical trading rules across 49 MSCI country indices. Although many rules appear profitable when examined isolated, none remain statistically significant once data-snooping bias is accounted for. The profitability of these rules is consistent with what may be expected by chance. Slightly stronger results are reported in emerging markets, but the effect is weak. Overall, the study concludes that the tested technical indicators do not add value beyond randomness.[@marshall2010technical]
+
+### State of the Art
+
 
 ## Task
 
-This project involves implementing and evaluating several rule-based trading strategies across different asset classes, including equities, cryptocurrencies and commodities. Historical price data is used as an input. The main task is to examine how different indicators, such as moving averages, RSI, or Bollinger Bands, perform as trading rules when applied to historical market data.
+This project involves implementing and evaluating several rule based trading strategies across different asset classes, including equities, cryptocurrencies and commodities. Historical price data is used as an input. The main task is to examine how different indicators, such as moving averages, MACD, or Bollinger Bands, perform as trading rules when applied to historical market data.
 
 The strategies are then compared to identify and analyze differences in performance.
 
 ## Objective
 
-The objective is to build a framework for evaluating trading strategies. This project will provide a quantitative baseline for later work that will extend the approach with more advanced or data-driven methods, such as machine learning models.
+The objective is to build a framework for evaluating trading strategies. This project will provide a quantitative baseline for later work that will extend the approach with more advanced or data driven methods, such as machine learning models.
+
+### Scope, Limitations and assumptions
+rf zins, long/flat

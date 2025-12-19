@@ -231,7 +231,6 @@ ALL_TVALS_DIR <- do.call(rbind, lapply(seq_len(nrow(grid)), function(i) {
 
 
 ## ---- end
-save.image("R/Results/my_workspace.RData")
 
 
 #--------Plot möglichkeit hypothesentests----------------------
